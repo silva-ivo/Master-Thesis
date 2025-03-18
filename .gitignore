@@ -1,3 +1,10 @@
 Data/
 Results/
 venv/
+src/models/__pycache__/
+src/test/__pycache__/
+src/train/__pycache__/
+src/Utils/__pycache__/
+*.pyc
+*.pyo
+__pycache__/
