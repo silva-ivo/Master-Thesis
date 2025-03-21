@@ -137,7 +137,6 @@ def plot_loss(history, loss_function_name, mode, model_name, window_size_name,
     save_dir = os.path.join(save_folder, mode, model_name, loss_function_name, window_size_name)
     os.makedirs(save_dir, exist_ok=True)
 
-    
     plt.figure(figsize=(10, 6))
     plt.plot(history['loss'], label='Training Loss', linestyle='-', marker='o', color='blue')
     plt.plot(history['val_loss'], label='Validation Loss', linestyle='-', marker='s', color='red')
