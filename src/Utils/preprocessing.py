@@ -2,7 +2,7 @@ import numpy as np
 import scipy.signal as signal
 
 
-def butter_bandpass(lowcut, highcut, fs, order=4):
+def butter_bandpass(lowcut, highcut, fs=256, order=4):
     """Design a Butterworth bandpass filter."""
     nyquist = 0.5 * fs
     low = lowcut / nyquist
@@ -10,19 +10,19 @@ def butter_bandpass(lowcut, highcut, fs, order=4):
     b, a = signal.butter(order, [low, high], btype='band')
     return b, a
 
-def notch_filter(data, notch_freq=50, fs=1000, order=2):
+def notch_filter(data, notch_freq=50, fs=256, order=2):
     """Apply a notch filter to remove powerline interference."""
     nyquist = 0.5 * fs
     freq = notch_freq / nyquist
     b, a = signal.iirnotch(freq, Q=30)  # Q=30 gives a narrow notch
     return signal.filtfilt(b, a, data, axis=0)
 
-def apply_bandpass_filter(data, lowcut=0.5, highcut=100, fs=1000, order=4):
+def apply_bandpass_filter(data, lowcut=0.5, highcut=100, fs=256, order=4):
     """Apply a Butterworth bandpass filter to EEG data."""
     b, a = butter_bandpass(lowcut, highcut, fs, order)
     return signal.filtfilt(b, a, data, axis=0)  # Zero-phase filtering
 
-def remove_artifacts(data, threshold=1000, flatline_duration=1, fs=1000):
+def remove_artifacts(data, threshold=600, flatline_duration=1, fs=256):
     """
     Remove EEG artifacts:
     - Saturated values (e.g., extreme peaks)
@@ -52,7 +52,7 @@ def remove_artifacts(data, threshold=1000, flatline_duration=1, fs=1000):
 
     return data
 
-def preprocess_eeg(data, fs=1000):
+def preprocess_eeg(data, fs=256):
     """Apply bandpass filter, notch filter, and artifact removal to EEG data."""
     data = apply_bandpass_filter(data, fs=fs)  # Remove low/high frequency noise
     data = notch_filter(data, fs=fs)  # Remove 50Hz interference
