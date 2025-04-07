@@ -8,8 +8,8 @@ from torch import nn
 
 #LOADERS
 data_base_dir = "/data/home/silva/Documents/Pipline_2/Data"
-window_size = 7680
-window_size_name = "30s"
+window_size = 1280
+window_size_name = "5s"
 batch_size = 32
 #window_size = 15360 1minuto
 #windows_size = 7680 30segundos
