@@ -178,10 +178,10 @@ class VGGBlock(nn.Module):
         return out
     
 class UNet(nn.Module):
-    def __init__(self, num_classes=19, input_channels=19, **kwargs):
+    def __init__(self, num_classes=2, input_channels=2, **kwargs):
         super().__init__()
 
-        nb_filter = [32, 64, 128, 256, 512]
+        nb_filter = [16, 32, 64, 128,256 ]
 
         self.pool = nn.MaxPool1d(2)
         #self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
@@ -189,6 +189,7 @@ class UNet(nn.Module):
 
         # input_channel => 32; 32 => 64; 64=>128; 128=>256
         self.conv0_0 = VGGBlock(input_channels, nb_filter[0], nb_filter[0], kernel_size=7)
+        
         self.conv1_0 = VGGBlock(nb_filter[0], nb_filter[1], nb_filter[1], kernel_size=5)
         self.conv2_0 = VGGBlock(nb_filter[1], nb_filter[2], nb_filter[2], kernel_size=5)
         self.conv3_0 = VGGBlock(nb_filter[2], nb_filter[3], nb_filter[3], kernel_size=3)
@@ -199,11 +200,13 @@ class UNet(nn.Module):
         self.conv1_3 = VGGBlock(nb_filter[1] + nb_filter[2], nb_filter[1], nb_filter[1], kernel_size=5)
         self.conv0_4 = VGGBlock(nb_filter[0] + nb_filter[1], nb_filter[0], nb_filter[0], kernel_size=7)
 
-        self.final = nn.Conv1d(nb_filter[0], num_classes, kernel_size=1)
+      
 
 
     def forward(self, input):
+        input = input.permute(0, 2, 1) 
         x0_0 = self.conv0_0(input)
+        
         x1_0 = self.conv1_0(self.pool(x0_0))
         x2_0 = self.conv2_0(self.pool(x1_0))
         x3_0 = self.conv3_0(self.pool(x2_0))
@@ -215,4 +218,5 @@ class UNet(nn.Module):
         x0_4 = self.conv0_4(torch.cat([x0_0, self.up(x1_3)], dim=1))
 
         output = self.final(x0_4)
+        output = output.permute(0, 2, 1)
         return output
