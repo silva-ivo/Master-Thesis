@@ -34,6 +34,127 @@ def split_segments(inputs, targets, window_size):
 
     return split_inputs, split_targets
 
+def select_channels_per_patient(X_patient, Y_patient, patient_id):
+  
+    # Simplified hemisphere-only dictionary(0=left, 1=right)
+    channel_dict = {
+        "pat_402": 1,
+        "pat_8902": 0,
+        "pat_16202": 0,
+        "pat_23902": 0,
+        "pat_30802": 1,
+        "pat_32702": 0,
+        "pat_46702": 1,
+        "pat_50802": 1,
+        "pat_53402": 1,
+        "pat_55202": 1,
+        "pat_56402": 0,
+        "pat_58602": 0,
+        "pat_59102": 1,
+        "pat_60002": 0,
+        "pat_64702": 1,
+        "pat_75202": 1,
+        "pat_80702": 0,
+        "pat_85202": 0,
+        "pat_93402": 0,
+        "pat_93902": 1,
+        "pat_112802": 0,
+        "pat_113902": 1,
+        "pat_114702": 1,
+        "pat_114902": 0,
+        "pat_123902": 0,
+    }
+
+    if patient_id not in channel_dict:
+        raise ValueError(f"Patient ID {patient_id} not found in channel_dict.")
+
+    side_flag = channel_dict[patient_id]
+
+    if side_flag == 0:
+        # Left hemisphere: F7 (10), T7 (12), P7 (14)
+        Fx = X_patient[:, :, 10]
+        Tx = X_patient[:, :, 12]
+        Px = X_patient[:, :, 14]
+        Fy= Y_patient[:, :, 10]
+        Ty= Y_patient[:, :, 12]
+        Py= Y_patient[:, :, 14]
+    elif side_flag == 1:
+        # Right hemisphere: F8 (11), T8 (13), P8 (15)
+        Fx = X_patient[:, :, 11]
+        Tx = X_patient[:, :, 13]
+        Px = X_patient[:, :, 15]
+        Fy= Y_patient[:, :, 11]
+        Ty= Y_patient[:, :, 13]
+        Py= Y_patient[:, :, 15]
+        
+    else:
+        raise ValueError(f"Invalid side_flag '{side_flag}' for patient {patient_id}")
+
+    # Create bipolar montages
+    Dsq_Csqx = Fx - Tx
+    Psq_Csqx = Px - Tx
+    Dsq_Csqy = Fy - Ty
+    Psq_Csqy = Py - Ty
+
+    # Final shape: (segments, points, 2)
+    X_selected = np.stack([Dsq_Csqx, Psq_Csqx], axis=-1)
+    Y_selected = np.stack([Dsq_Csqy, Psq_Csqy], axis=-1) if Y_patient is not None else None
+
+    print(f"{patient_id} → Side: {'Left' if side_flag == 0 else 'Right'}")
+    print("X_selected shape:", X_selected.shape)
+    print("Y_selected shape:", Y_selected.shape if Y_selected is not None else "None")
+    return X_selected, Y_selected
+
+
+def plot_random_20_segments(X_selected, Y_selected, patient_id, save_dir, fs=256):
+    # Ensure save directory exists
+    os.makedirs(save_dir, exist_ok=True)
+
+    # Generate random indices for the segments
+    random_indices = np.random.choice(X_selected.shape[0], size=20, replace=False)  # Example: selecting 20 random segments
+
+    for idx in random_indices:
+        filename = f"{patient_id}_segment_{idx}.png"
+        full_path = os.path.join(save_dir, filename)
+
+        # Calculate time in seconds for each data point in the segment
+        time = np.arange(X_selected.shape[1]) / fs  # Convert time points to seconds
+
+        fig, axs = plt.subplots(2, 1, figsize=(12, 6), sharex=True)
+        fig.suptitle(f"{patient_id} - Segment {idx}", fontsize=14)
+
+        # Plot the input data (X_selected)
+        axs[0].plot(time, X_selected[idx, :, 0], label="Dsq–Csq (F - T)", linewidth=1, alpha=0.8, color='#56B4E9')
+        axs[0].plot(time, X_selected[idx, :, 1], label="Psq–Csq (P - T)", linewidth=0.8, alpha=0.6, color='black')
+        axs[0].set_ylabel("X_selected")
+        axs[0].legend()
+        axs[0].grid(True)
+
+        # Plot the target data (Y_selected), if available
+        if Y_selected is not None:
+            axs[1].plot(time, Y_selected[idx, :, 0], label="Dsq–Csq (F - T)", linewidth=1, alpha=0.8, color='#56B4E9')
+            axs[1].plot(time, Y_selected[idx, :, 1], label="Psq–Csq (P - T)", linewidth=0.8, alpha=0.6, color='black')
+            axs[1].set_ylabel("Y_selected")
+            axs[1].legend()
+            axs[1].grid(True)
+
+        # Set x-axis label for time in seconds
+        axs[1].set_xlabel("Time (s)")
+
+        # Set the same y-axis limits for both subplots to ensure they are on the same scale
+        y_min = min(np.min(X_selected[idx, :, 0]), np.min(X_selected[idx, :, 1]), np.min(Y_selected[idx, :, 0]), np.min(Y_selected[idx, :, 1]))
+        y_max = max(np.max(X_selected[idx, :, 0]), np.max(X_selected[idx, :, 1]), np.max(Y_selected[idx, :, 0]), np.max(Y_selected[idx, :, 1]))
+        axs[0].set_ylim([y_min, y_max])
+        axs[1].set_ylim([y_min, y_max])
+
+        # Adjust layout and save the figure
+        plt.tight_layout()
+        plt.savefig(full_path)
+        plt.close()
+
+        print(f"Saved: {full_path}")
+
+
 class TimeSeriesDataset(Dataset):
     def __init__(self, X, Y):
         self.X = X
