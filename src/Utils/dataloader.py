@@ -132,6 +132,9 @@ def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7,
     
     all_inputs, all_targets = [], []
     
+    
+    
+    
     for patient_folder in patient_folders:
         patient_id = os.path.basename(patient_folder)
         input_files = sorted(glob.glob(os.path.join(patient_folder, "original_filtered_segment_*.npy")))
@@ -162,7 +165,7 @@ def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7,
 
     train_dataset = Subset(dataset, range(0, train_size))
     val_dataset = Subset(dataset, range(train_size, train_size + val_size))
-    test_dataset = Subset(dataset, range(train_size + val_size, len(dataset)))
+    test_dataset = Subset(dataset, range(train_size + val_size, train_size + val_size + test_size))
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
