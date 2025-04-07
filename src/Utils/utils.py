@@ -15,7 +15,7 @@ def load_data(file_pattern,base_dir):
     data = [np.load(file, allow_pickle=True) for file in file_list]
     return np.array(data)  # Ensure output is a NumPy array
 
-def split_segments(inputs, targets, window_size):
+def split_segments(inputs, targets, window_size,normalize=False, norm_type='zscore'):
    
     num_segments, total_timepoints, num_channels, extra_dim = inputs.shape
     num_splits = total_timepoints // window_size  # Number of new windows per segment
@@ -31,6 +31,10 @@ def split_segments(inputs, targets, window_size):
     # Merge first two dimensions (all segments become one large batch)
     split_inputs = split_inputs.reshape(-1, window_size, num_channels)
     split_targets = split_targets.reshape(-1, window_size, num_channels)
+    
+    if normalize:
+        split_inputs = normalize_data(split_inputs, norm_type=norm_type)
+        split_targets = normalize_data(split_targets, norm_type=norm_type)
 
     return split_inputs, split_targets
 
@@ -104,6 +108,27 @@ def select_channels_per_patient(X_patient, Y_patient, patient_id):
     print("X_selected shape:", X_selected.shape)
     print("Y_selected shape:", Y_selected.shape if Y_selected is not None else "None")
     return X_selected, Y_selected
+
+def normalize_data(data, norm_type='zscore'):
+    """
+    Normalize the data. Options for normalization: 'zscore', 'minmax', 'mean'.
+    """
+    if norm_type == 'zscore':
+        # Z-score normalization (mean=0, std=1)
+        mean = data.mean(dim=0, keepdim=True)
+        std = data.std(dim=0, keepdim=True)
+        return (data - mean) / (std + 1e-8)  # Add small epsilon to avoid division by 0
+    elif norm_type == 'minmax':
+        # Min-Max normalization (scale between 0 and 1)
+        min_val = data.min(dim=0, keepdim=True)[0]
+        max_val = data.max(dim=0, keepdim=True)[0]
+        return (data - min_val) / (max_val - min_val + 1e-8)
+    elif norm_type == 'mean':
+        # Mean normalization (center data around 0)
+        mean = data.mean(dim=0, keepdim=True)
+        return data - mean
+    else:
+        raise ValueError("Unsupported normalization type")
 
 
 def plot_random_20_segments(X_selected, Y_selected, patient_id, save_dir, fs=256):

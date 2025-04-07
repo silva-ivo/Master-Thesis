@@ -124,7 +124,7 @@ def load_nested_cv_patients(data_base_dir, window_size, batch_size, outer_folds,
 
 #Simpler dataloader
 
-def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7, 0.15, 0.15)):
+def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7, 0.15, 0.15),normalize=False):
     
     patient_folders = sorted(glob.glob(os.path.join(data_base_dir, "Filtered_Data_pat*")))
     if not patient_folders:
@@ -149,9 +149,9 @@ def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7,
         
         patient_id=patient_id.split("Filtered_Data_")[-1]
         
-        X_patient, y_patient = utils.split_segments(np.array(inputs),np.array(targets) , window_size)
+        X_patient, y_patient = utils.split_segments(np.array(inputs),np.array(targets) , window_size,normalize=normalize)
         X_patient,y_patient = utils.select_channels_per_patient(X_patient, y_patient, patient_id)
-        utils.plot_random_20_segments(X_patient, y_patient, patient_id,'/data/home/silva/Documents/Pipline_2/Results/2channels_aprox_visualization')
+        #utils.plot_random_20_segments(X_patient, y_patient, patient_id,'/data/home/silva/Documents/Pipline_2/Results/2channels_aprox_visualization')
         
         all_inputs.append(X_patient)
         all_targets.append(y_patient)
