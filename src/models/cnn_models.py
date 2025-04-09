@@ -2,24 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class ResidualBlock_OneD_ResCNN(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size):
-        super(ResidualBlock_OneD_ResCNN, self).__init__()
-        self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size, padding='same')
-        self.bn1 = nn.BatchNorm1d(out_channels)
-        self.conv2 = nn.Conv1d(out_channels, out_channels // 2, kernel_size, padding='same')
-        self.bn2 = nn.BatchNorm1d(out_channels // 2)
-        self.conv3 = nn.Conv1d(out_channels // 2, out_channels, kernel_size, padding='same')
-        self.bn3 = nn.BatchNorm1d(out_channels)
-        self.shortcut = nn.Conv1d(in_channels, out_channels, 1, padding='same') if in_channels != out_channels else None
-
-    def forward(self, x):
-        shortcut = self.shortcut(x) if self.shortcut is not None else x
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = self.bn3(self.conv3(x))
-        x += shortcut
-        return F.relu(x)
 
 class OneD_ResCNN(nn.Module):
     def __init__(self, input_shape):

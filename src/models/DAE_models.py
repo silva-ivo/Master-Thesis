@@ -188,19 +188,19 @@ class UNet(nn.Module):
         self.up = nn.Upsample(scale_factor=2, mode='linear', align_corners=False)
 
         # input_channel => 32; 32 => 64; 64=>128; 128=>256
-        self.conv0_0 = VGGBlock(input_channels, nb_filter[0], nb_filter[0], kernel_size=7)
+        self.conv0_0 = VGGBlock(input_channels, nb_filter[0], nb_filter[0], ks=7)
         
-        self.conv1_0 = VGGBlock(nb_filter[0], nb_filter[1], nb_filter[1], kernel_size=5)
-        self.conv2_0 = VGGBlock(nb_filter[1], nb_filter[2], nb_filter[2], kernel_size=5)
-        self.conv3_0 = VGGBlock(nb_filter[2], nb_filter[3], nb_filter[3], kernel_size=3)
-        self.conv4_0 = VGGBlock(nb_filter[3], nb_filter[4], nb_filter[4], kernel_size=3)
+        self.conv1_0 = VGGBlock(nb_filter[0], nb_filter[1], nb_filter[1], ks=5)
+        self.conv2_0 = VGGBlock(nb_filter[1], nb_filter[2], nb_filter[2], ks=5)
+        self.conv3_0 = VGGBlock(nb_filter[2], nb_filter[3], nb_filter[3], ks=3)
+        self.conv4_0 = VGGBlock(nb_filter[3], nb_filter[4], nb_filter[4], ks=3)
 
-        self.conv3_1 = VGGBlock(nb_filter[3] + nb_filter[4], nb_filter[3], nb_filter[3], kernel_size=3)
-        self.conv2_2 = VGGBlock(nb_filter[2] + nb_filter[3], nb_filter[2], nb_filter[2], kernel_size=5)
-        self.conv1_3 = VGGBlock(nb_filter[1] + nb_filter[2], nb_filter[1], nb_filter[1], kernel_size=5)
-        self.conv0_4 = VGGBlock(nb_filter[0] + nb_filter[1], nb_filter[0], nb_filter[0], kernel_size=7)
+        self.conv3_1 = VGGBlock(nb_filter[3] + nb_filter[4], nb_filter[3], nb_filter[3], ks=3)
+        self.conv2_2 = VGGBlock(nb_filter[2] + nb_filter[3], nb_filter[2], nb_filter[2], ks=5)
+        self.conv1_3 = VGGBlock(nb_filter[1] + nb_filter[2], nb_filter[1], nb_filter[1], ks=5)
+        self.conv0_4 = VGGBlock(nb_filter[0] + nb_filter[1], nb_filter[0], nb_filter[0], ks=7)
 
-      
+        self.final = nn.Conv1d(nb_filter[0], num_classes, kernel_size=1, padding=0)
 
 
     def forward(self, input):
