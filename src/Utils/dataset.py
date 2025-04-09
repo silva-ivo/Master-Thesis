@@ -17,7 +17,7 @@ if not patient_folders:
     raise FileNotFoundError(" No patient folders found in Data directory.")
 
 for patient_folder in patient_folders:
-    patient_id = os.path.basename(patient_folder)  # Extract patient name (e.g., "Dados_paciente402")
+    patient_id = os.path.basename(patient_folder)  # Extract patient name (e.g., "Data_pat_402")
     patient_output_dir = os.path.join(data_base_dir, f"Filtered_{patient_id}")
 
     os.makedirs(patient_output_dir, exist_ok=True)
@@ -36,7 +36,7 @@ for patient_folder in patient_folders:
 
     else:
         segments_reshaped = original_segment.reshape(-1, 19)
-        filtered_segments = preprocessing.preprocess_eeg(segments_reshaped, fs=1000)
+        filtered_segments = preprocessing.preprocess_eeg(segments_reshaped, fs=256)
         original_filtered_segment = filtered_segments.reshape(original_segment.shape)
 
         for i in range(original_filtered_segment.shape[0]):  # Loop through all segments
@@ -54,7 +54,7 @@ for patient_folder in patient_folders:
         original_signal = original_segment[random_segment, :, random_channel, 0]  # Shape: (153600,)
         filtered_signal = original_filtered_segment[random_segment, :, random_channel, 0]  # Shape: (153600,)
 
-        # Create a time axis (assuming fs = 1000 Hz)
+        # Create a time axis 
         fs = 256  # Sampling frequency
         time = np.arange(len(original_signal)) / fs  # Convert sample index to time in seconds
 

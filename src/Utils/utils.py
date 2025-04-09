@@ -15,7 +15,7 @@ def load_data(file_pattern,base_dir):
     data = [np.load(file, allow_pickle=True) for file in file_list]
     return np.array(data)  # Ensure output is a NumPy array
 
-def split_segments(inputs, targets, window_size,normalize=False, norm_type='zscore'):
+def split_segments(inputs, targets, window_size):
    
     num_segments, total_timepoints, num_channels, extra_dim = inputs.shape
     num_splits = total_timepoints // window_size  # Number of new windows per segment
@@ -32,10 +32,6 @@ def split_segments(inputs, targets, window_size,normalize=False, norm_type='zsco
     split_inputs = split_inputs.reshape(-1, window_size, num_channels)
     split_targets = split_targets.reshape(-1, window_size, num_channels)
     
-    if normalize:
-        split_inputs = normalize_data(split_inputs, norm_type=norm_type)
-        split_targets = normalize_data(split_targets, norm_type=norm_type)
-
     return split_inputs, split_targets
 
 def select_channels_per_patient(X_patient, Y_patient, patient_id):
@@ -109,26 +105,6 @@ def select_channels_per_patient(X_patient, Y_patient, patient_id):
     print("Y_selected shape:", Y_selected.shape if Y_selected is not None else "None")
     return X_selected, Y_selected
 
-def normalize_data(data, norm_type='zscore'):
-    """
-    Normalize the data. Options for normalization: 'zscore', 'minmax', 'mean'.
-    """
-    if norm_type == 'zscore':
-        # Z-score normalization (mean=0, std=1)
-        mean = data.mean(dim=0, keepdim=True)
-        std = data.std(dim=0, keepdim=True)
-        return (data - mean) / (std + 1e-8)  # Add small epsilon to avoid division by 0
-    elif norm_type == 'minmax':
-        # Min-Max normalization (scale between 0 and 1)
-        min_val = data.min(dim=0, keepdim=True)[0]
-        max_val = data.max(dim=0, keepdim=True)[0]
-        return (data - min_val) / (max_val - min_val + 1e-8)
-    elif norm_type == 'mean':
-        # Mean normalization (center data around 0)
-        mean = data.mean(dim=0, keepdim=True)
-        return data - mean
-    else:
-        raise ValueError("Unsupported normalization type")
 
 
 def plot_random_20_segments(X_selected, Y_selected, patient_id, save_dir, fs=256):
@@ -149,17 +125,19 @@ def plot_random_20_segments(X_selected, Y_selected, patient_id, save_dir, fs=256
         fig.suptitle(f"{patient_id} - Segment {idx}", fontsize=14)
 
         # Plot the input data (X_selected)
-        axs[0].plot(time, X_selected[idx, :, 0], label="Dsq–Csq (F - T)", linewidth=1, alpha=0.8, color='#56B4E9')
-        axs[0].plot(time, X_selected[idx, :, 1], label="Psq–Csq (P - T)", linewidth=0.8, alpha=0.6, color='black')
-        axs[0].set_ylabel("X_selected")
+        axs[0].plot(time, X_selected[idx, :, 0], label="Ch:1(F - T)", linewidth=1, alpha=0.8, color='#56B4E9')
+        axs[0].plot(time, X_selected[idx, :, 1], label="Ch:2(P - T)", linewidth=0.8, alpha=0.6, color='black')
+        axs[0].set_ylabel("Input")
+        axs[0].set_title("Input Data")
         axs[0].legend()
         axs[0].grid(True)
 
         # Plot the target data (Y_selected), if available
         if Y_selected is not None:
-            axs[1].plot(time, Y_selected[idx, :, 0], label="Dsq–Csq (F - T)", linewidth=1, alpha=0.8, color='#56B4E9')
-            axs[1].plot(time, Y_selected[idx, :, 1], label="Psq–Csq (P - T)", linewidth=0.8, alpha=0.6, color='black')
-            axs[1].set_ylabel("Y_selected")
+            axs[1].plot(time, Y_selected[idx, :, 0], label="Ch:1 (F - T)", linewidth=1, alpha=0.8, color='#56B4E9')
+            axs[1].plot(time, Y_selected[idx, :, 1], label="Ch:2 (P - T)", linewidth=0.8, alpha=0.6, color='black')
+            axs[1].set_ylabel("Target")
+            axs[1].set_title("Target Data")
             axs[1].legend()
             axs[1].grid(True)
 
@@ -206,6 +184,7 @@ class RRMSELoss(nn.Module):
         rrmse = torch.divide(rmse, rms_y)
 
         return rrmse
+    
     
 def plot_predictions(y_true_cpu, y_pred_cpu, x_inputs_cpu, 
                      num_windows, loss_function_name, mode, model_name, window_size_name, 

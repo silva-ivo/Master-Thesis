@@ -3,7 +3,7 @@ import glob
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, Sampler, Subset
-from sklearn.model_selection import KFold, GroupKFold
+from sklearn.model_selection import  GroupKFold
 from Utils import utils
 
 # Define EEGDataset and PatientBatchSampler classes for NESTED CV
@@ -124,7 +124,7 @@ def load_nested_cv_patients(data_base_dir, window_size, batch_size, outer_folds,
 
 #Simpler dataloader
 
-def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7, 0.15, 0.15),normalize=False):
+def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7, 0.15, 0.15)):
     
     patient_folders = sorted(glob.glob(os.path.join(data_base_dir, "Filtered_Data_pat*")))
     if not patient_folders:
@@ -134,11 +134,11 @@ def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7,
     
     
     
-    
     for patient_folder in patient_folders:
         patient_id = os.path.basename(patient_folder)
         input_files = sorted(glob.glob(os.path.join(patient_folder, "original_filtered_segment_*.npy")))
         target_files = sorted(glob.glob(os.path.join(data_base_dir, patient_id.replace("Filtered_", ""), "preprocessed_segment_*.npy")))
+        
         
         if not input_files or not target_files:
             continue
@@ -149,16 +149,19 @@ def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7,
         
         patient_id=patient_id.split("Filtered_Data_")[-1]
         
-        X_patient, y_patient = utils.split_segments(np.array(inputs),np.array(targets) , window_size,normalize=normalize)
+        X_patient, y_patient = utils.split_segments(np.array(inputs),np.array(targets) , window_size)
         X_patient,y_patient = utils.select_channels_per_patient(X_patient, y_patient, patient_id)
+        
         #utils.plot_random_20_segments(X_patient, y_patient, patient_id,'/data/home/silva/Documents/Pipline_2/Results/2channels_aprox_visualization')
         
         all_inputs.append(X_patient)
         all_targets.append(y_patient)
 
-        
+    
+    
     all_inputs = np.concatenate(all_inputs, axis=0)
     all_targets = np.concatenate(all_targets, axis=0)
+    
     
     
     dataset = utils.TimeSeriesDataset(torch.tensor(all_inputs, dtype=torch.float32), 
@@ -166,7 +169,7 @@ def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7,
 
     train_size = int(split_ratio[0] * len(dataset))
     val_size = int(split_ratio[1] * len(dataset))
-    test_size = len(dataset) - train_size - val_size
+    test_size = int(split_ratio[2] * len(dataset))
 
     train_dataset = Subset(dataset, range(0, train_size))
     val_dataset = Subset(dataset, range(train_size, train_size + val_size))
