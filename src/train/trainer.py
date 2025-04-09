@@ -37,33 +37,42 @@ def train_model(model,model_name, train_loader, val_loader,window_size_name, los
             optimizer.step()
 
             train_loss += loss.item()
+            
 
+        
         epoch_loss =train_loss/ len(train_loader)
+      
         history['loss'].append(epoch_loss)
 
       
         #Validation
-        model.eval()
-        val_loss = 0.0
+        
 
         y_pred_tensor = torch.empty(0, *y_pred.shape[1:]).to(device)  
         y_true_tensor = torch.empty(0, *y_pred.shape[1:]).to(device)
         x_inputs_tensor = torch.empty(0, *y_pred.shape[1:]).to(device)
-
+        
+        model.eval()
+        val_loss = 0.0
+        len_val_loss=0
         with torch.no_grad():
             for X_val, y_val in val_loader:
                 X_val, y_val = X_val.to(device), y_val.to(device)
 
                 y_pred = model(X_val)
                 loss = criterion(y_pred, y_val)
-                val_loss += loss.item()
+                
+                if loss.item() <1e3:
+                    val_loss += loss.item()
+                    len_val_loss+=1
 
                 y_pred_tensor = torch.cat((y_pred_tensor, y_pred), dim=0)
                 y_true_tensor = torch.cat((y_true_tensor, y_val), dim=0)
                 x_inputs_tensor = torch.cat((x_inputs_tensor, X_val), dim=0)
         
-        epoch_val_loss = val_loss / len(val_loader)
-        history['val_loss'].append(epoch_val_loss)
+            epoch_val_loss = val_loss / len_val_loss
+            
+            history['val_loss'].append(epoch_val_loss)
 
         #Early Stopping
         
