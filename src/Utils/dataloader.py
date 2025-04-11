@@ -122,7 +122,7 @@ def load_nested_cv_patients(data_base_dir, window_size, batch_size, outer_folds,
             
             yield train_loader, val_loader, test_loader
 
-#Simpler dataloader
+#Simpler dataloader         
 
 def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7, 0.15, 0.15)):
     
@@ -175,8 +175,8 @@ def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7,
     val_dataset = Subset(dataset, range(train_size, train_size + val_size))
     test_dataset = Subset(dataset, range(train_size + val_size, train_size + val_size + test_size))
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,pin_memory=True)
 
     return train_loader, val_loader, test_loader

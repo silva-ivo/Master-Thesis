@@ -6,8 +6,8 @@ import os
 
 
 def train_model(model,model_name, train_loader, val_loader,window_size_name, loss_function,loss_function_name, device, num_epochs, early_stopping_patience,lr):
-    
-    model_save_path = f"/data/home/silva/Documents/Pipline_2/Results/training/{model_name}/{loss_function_name}/{window_size_name}"
+    print(f"Estou no treino")
+    model_save_path=f"/data/home/silva/Documents/Pipline_2/Data/Results/DCNn_GridSearch/Phase_1/{model_name}"
     os.makedirs(model_save_path, exist_ok=True)  
     save_path_bestmodel = os.path.join(model_save_path, "best_model.pth")
         
@@ -16,7 +16,7 @@ def train_model(model,model_name, train_loader, val_loader,window_size_name, los
     optimizer = optim.Adam(model.parameters(), lr)
 
     best_val_loss = float('inf')
-    patience_counter = 0
+    patience_counter = early_stopping_patience
 
     history = {'loss': [], 'val_loss': []}
     model.to(device)
@@ -26,7 +26,7 @@ def train_model(model,model_name, train_loader, val_loader,window_size_name, los
         train_loss = 0.0
 
         for X_batch, y_batch in train_loader:
-            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+            X_batch, y_batch = X_batch.to(device,non_blocking=True), y_batch.to(device,non_blocking=True)
 
             optimizer.zero_grad()
 
@@ -57,7 +57,7 @@ def train_model(model,model_name, train_loader, val_loader,window_size_name, los
         len_val_loss=0
         with torch.no_grad():
             for X_val, y_val in val_loader:
-                X_val, y_val = X_val.to(device), y_val.to(device)
+                X_val, y_val = X_val.to(device,non_blocking=True), y_val.to(device,non_blocking=True)
 
                 y_pred = model(X_val)
                 loss = criterion(y_pred, y_val)

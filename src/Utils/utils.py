@@ -263,8 +263,11 @@ def plot_loss(history, loss_function_name, mode, model_name, window_size_name,
     os.makedirs(save_dir, exist_ok=True)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(history['loss'], label='Training Loss', linestyle='-', marker='o', color='blue')
-    plt.plot(history['val_loss'], label='Validation Loss', linestyle='-', marker='s', color='red')
+    plt.plot(history['loss'], label='Training Loss', linestyle='-', marker='o', color='#1f77b4', markersize=6, linewidth=1.5)
+
+    # Plot Validation Loss
+    plt.plot(history['val_loss'], label='Validation Loss', linestyle='-', marker='s', color='#ff7f0e', markersize=6, linewidth=1.5)
+
 
     plt.xlabel("Epochs")
     plt.ylabel("Loss")

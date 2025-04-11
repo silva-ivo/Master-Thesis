@@ -47,8 +47,8 @@ for outer_fold, (train_loader, val_loader, test_loader) in enumerate(
         lr=learning_rate
         )
 
-        # Evaluate model
-    X_test_tensor, y_true_test_tensor, y_pred_test_tensor = test.tester.evalute_model(model,test_loader,device)
+    #     # Evaluate model
+    # X_test_tensor, y_true_test_tensor, y_pred_test_tensor = test.tester.evalute_model(model,test_loader,device)
 
     pcc = metrics.compute_pcc(y_true_test_tensor, y_pred_test_tensor)
     snr_diff = metrics.compute_snr_diff(y_true_test_tensor, y_pred_test_tensor, X_test_tensor)
