@@ -156,49 +156,130 @@ class CNN_LSTM_Autoencoder(nn.Module):
 
 
 class VGGBlock(nn.Module):
-    def __init__(self, in_channels, middle_channels, out_channels, ks):
+    def __init__(self, in_channels, middle_channels, out_channels, ks,dropout=0.0):
         super().__init__()
         padding = int((ks - 1) / 2)
 
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.LeakyReLU(inplace=True)
         self.conv1 = nn.Conv1d(in_channels, middle_channels, kernel_size=ks, padding=padding)
         self.bn1 = nn.BatchNorm1d(middle_channels)
         self.conv2 = nn.Conv1d(middle_channels, out_channels, kernel_size=ks, padding=padding)
         self.bn2 = nn.BatchNorm1d(out_channels)
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
+        out = self.dropout(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
+        out = self.dropout(out)
 
         return out
     
-class UNet(nn.Module):
-    def __init__(self, num_classes=2, input_channels=2, **kwargs):
+class UNet_3(nn.Module):
+    def __init__(self, num_classes=2, input_channels=2,dropout=0, **kwargs):
         super().__init__()
 
-        nb_filter = [16, 32, 64, 128,256 ]
+        nb_filter = [16, 32, 64]
 
         self.pool = nn.MaxPool1d(2)
-        #self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         self.up = nn.Upsample(scale_factor=2, mode='linear', align_corners=False)
 
-        # input_channel => 32; 32 => 64; 64=>128; 128=>256
-        self.conv0_0 = VGGBlock(input_channels, nb_filter[0], nb_filter[0], ks=7)
+      
+        self.conv0_0 = VGGBlock(input_channels, nb_filter[0], nb_filter[0], ks=7,dropout=dropout)
+        self.conv1_0 = VGGBlock(nb_filter[0], nb_filter[1], nb_filter[1], ks=5,dropout=dropout)
         
-        self.conv1_0 = VGGBlock(nb_filter[0], nb_filter[1], nb_filter[1], ks=5)
-        self.conv2_0 = VGGBlock(nb_filter[1], nb_filter[2], nb_filter[2], ks=5)
-        self.conv3_0 = VGGBlock(nb_filter[2], nb_filter[3], nb_filter[3], ks=3)
-        self.conv4_0 = VGGBlock(nb_filter[3], nb_filter[4], nb_filter[4], ks=3)
+        self.conv2_0 = VGGBlock(nb_filter[1], nb_filter[2], nb_filter[2], ks=3,dropout=dropout)
+        
+        self.conv3_1 = VGGBlock(nb_filter[1] + nb_filter[2], nb_filter[1], nb_filter[1], ks=5,dropout=dropout)
+        self.conv2_2 = VGGBlock(nb_filter[0] + nb_filter[1], nb_filter[0], nb_filter[0], ks=7,dropout=dropout)
+ 
+        self.final = nn.Conv1d(nb_filter[0], num_classes, kernel_size=1, padding=0)
 
-        self.conv3_1 = VGGBlock(nb_filter[3] + nb_filter[4], nb_filter[3], nb_filter[3], ks=3)
-        self.conv2_2 = VGGBlock(nb_filter[2] + nb_filter[3], nb_filter[2], nb_filter[2], ks=5)
-        self.conv1_3 = VGGBlock(nb_filter[1] + nb_filter[2], nb_filter[1], nb_filter[1], ks=5)
-        self.conv0_4 = VGGBlock(nb_filter[0] + nb_filter[1], nb_filter[0], nb_filter[0], ks=7)
+
+    def forward(self, input):
+        input = input.permute(0, 2, 1) 
+        
+        x0_0 = self.conv0_0(input)
+        x1_0 = self.conv1_0(self.pool(x0_0))
+        
+        x2_0 = self.conv2_0(self.pool(x1_0))
+        
+        x1_1 = self.conv3_1(torch.cat([x1_0, self.up(x2_0)], dim=1)) 
+        x0_2 = self.conv2_2(torch.cat([x0_0, self.up(x1_1)], dim=1))
+
+        output = self.final(x0_2)
+        output = output.permute(0, 2, 1)
+        return output
+    
+class UNet_4(nn.Module):
+        def __init__(self, num_classes=2, input_channels=2,dropout=0, **kwargs):
+            super().__init__()
+
+            nb_filter = [16, 32, 64, 128]
+
+            self.pool = nn.MaxPool1d(2)
+          
+            self.up = nn.Upsample(scale_factor=2, mode='linear', align_corners=False)
+
+            
+            self.conv0_0 = VGGBlock(input_channels, nb_filter[0], nb_filter[0], ks=7,dropout=dropout)
+            self.conv1_0 = VGGBlock(nb_filter[0], nb_filter[1], nb_filter[1], ks=5,dropout=dropout)
+            self.conv2_0 = VGGBlock(nb_filter[1], nb_filter[2], nb_filter[2], ks=3,dropout=dropout)
+            
+            self.conv3_0 = VGGBlock(nb_filter[2], nb_filter[3], nb_filter[3], ks=3,dropout=dropout)
+        
+            self.conv3_1 = VGGBlock(nb_filter[2] + nb_filter[3], nb_filter[2], nb_filter[2], ks=3,dropout=dropout)
+            self.conv2_2 = VGGBlock(nb_filter[1] + nb_filter[2], nb_filter[1], nb_filter[1], ks=5,dropout=dropout)
+            self.conv1_3 = VGGBlock(nb_filter[0] + nb_filter[1], nb_filter[0], nb_filter[0], ks=7,dropout=dropout)
+        
+
+            self.final = nn.Conv1d(nb_filter[0], num_classes, kernel_size=1, padding=0)
+
+
+        def forward(self, input):
+            input = input.permute(0, 2, 1) 
+            x0_0 = self.conv0_0(input)
+            x1_0 = self.conv1_0(self.pool(x0_0))
+            x2_0 = self.conv2_0(self.pool(x1_0))
+           
+            x3_0 = self.conv3_0(self.pool(x2_0))
+    
+
+            x2_1 = self.conv3_1(torch.cat([x2_0, self.up(x3_0)], dim=1))  
+            x1_2 = self.conv2_2(torch.cat([x1_0, self.up(x2_1)], dim=1))
+            x0_3 = self.conv1_3(torch.cat([x0_0, self.up(x1_2)], dim=1))
+       
+
+            output = self.final(x0_3)
+            output = output.permute(0, 2, 1)
+            return output    
+
+class UNet_5(nn.Module):
+    def __init__(self, num_classes=2, input_channels=2,dropout=0, **kwargs):
+        super().__init__()
+
+        nb_filter = [16, 32, 64, 128, 256 ]
+
+        self.pool = nn.MaxPool1d(2)
+   
+        self.up = nn.Upsample(scale_factor=2, mode='linear', align_corners=False)
+
+        self.conv0_0 = VGGBlock(input_channels, nb_filter[0], nb_filter[0], ks=7,dropout=dropout)
+        self.conv1_0 = VGGBlock(nb_filter[0], nb_filter[1], nb_filter[1], ks=5,dropout=dropout)
+        self.conv2_0 = VGGBlock(nb_filter[1], nb_filter[2], nb_filter[2], ks=5,dropout=dropout)
+        self.conv3_0 = VGGBlock(nb_filter[2], nb_filter[3], nb_filter[3], ks=3,dropout=dropout)
+       
+        self.conv4_0 = VGGBlock(nb_filter[3], nb_filter[4], nb_filter[4], ks=3,dropout= dropout)
+
+        self.conv3_1 = VGGBlock(nb_filter[3] + nb_filter[4], nb_filter[3], nb_filter[3], ks=3,dropout=dropout)
+        self.conv2_2 = VGGBlock(nb_filter[2] + nb_filter[3], nb_filter[2], nb_filter[2], ks=5,dropout=dropout)
+        self.conv1_3 = VGGBlock(nb_filter[1] + nb_filter[2], nb_filter[1], nb_filter[1], ks=5,dropout=dropout)
+        self.conv0_4 = VGGBlock(nb_filter[0] + nb_filter[1], nb_filter[0], nb_filter[0], ks=7,dropout=dropout)
 
         self.final = nn.Conv1d(nb_filter[0], num_classes, kernel_size=1, padding=0)
 
@@ -206,13 +287,13 @@ class UNet(nn.Module):
     def forward(self, input):
         input = input.permute(0, 2, 1) 
         x0_0 = self.conv0_0(input)
-        
         x1_0 = self.conv1_0(self.pool(x0_0))
         x2_0 = self.conv2_0(self.pool(x1_0))
         x3_0 = self.conv3_0(self.pool(x2_0))
+       
         x4_0 = self.conv4_0(self.pool(x3_0))
 
-        x3_1 = self.conv3_1(torch.cat([x3_0, self.up(x4_0)], dim=1))  # Fixed skip connection
+        x3_1 = self.conv3_1(torch.cat([x3_0, self.up(x4_0)], dim=1))  
         x2_2 = self.conv2_2(torch.cat([x2_0, self.up(x3_1)], dim=1))
         x1_3 = self.conv1_3(torch.cat([x1_0, self.up(x2_2)], dim=1))
         x0_4 = self.conv0_4(torch.cat([x0_0, self.up(x1_3)], dim=1))

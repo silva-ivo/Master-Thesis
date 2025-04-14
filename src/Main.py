@@ -23,7 +23,7 @@ data_base_dir = "/data/home/silva/Documents/Pipline_2/Data"
 
 
 # === Paths ===
-model_config_file = "/data/home/silva/Documents/Pipline_2/Data/Results/DCNN_GridSearch/Phase_1"
+model_config_file = "/data/home/silva/Documents/Pipline_2/Results/DCNN_GridSearch/Phase_1"
 os.makedirs(os.path.dirname(model_config_file), exist_ok=True)
 
 # === Model parameter space ===
@@ -67,6 +67,7 @@ for num_blocks in num_blocks_options:
                     df_model_config = pd.DataFrame([model_config])
                     os.makedirs(os.path.join(model_config_file, f"model{model_id}"), exist_ok=True)
                     model_config_file_id = os.path.join(model_config_file,f"model{model_id}", f"model{model_id}_config.csv")
+                    print(f"Saving model config to {model_config_file_id}")
                     df_model_config.to_csv(model_config_file_id, mode='a', index=False,
                                             header=not os.path.exists(model_config_file_id))
                 
@@ -129,8 +130,8 @@ for num_blocks in num_blocks_options:
                             "rmse": rmse,
                             "rrmse": rrmse
                         }
+                        os.makedirs(os.path.join(model_config_file, f"model{model_id}"), exist_ok=True)
                         df_result = pd.DataFrame([result])
-                        os.makedirs(os.path.join(model_config_file, model_id), exist_ok=True)
                         model_results_file_id = os.path.join(model_config_file,f"model{model_id}", f"model{model_id}_results.csv")
                         df_result.to_csv(model_results_file_id, mode='a', index=False,
                                          header=not os.path.exists(model_results_file_id))
@@ -139,4 +140,4 @@ for num_blocks in num_blocks_options:
                         # ut.plot_loss(history, loss_fn_key, "GridSearch", model_name, win_size_key)
                         # ut.plot_predictions(y_true, y_pred, x_input, 10, loss_fn_key, "GridSearch", model_name, win_size_key)
 
-                        model_id += 1
+                    model_id += 1
