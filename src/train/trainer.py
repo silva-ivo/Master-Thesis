@@ -25,7 +25,7 @@ def train_model(model,model_name, train_loader, val_loader,window_size_name, los
         model.train()
         train_loss = 0.0
 
-        for X_batch, y_batch in train_loader:
+        for X_batch, y_batch,idx_batch in train_loader:
             X_batch, y_batch = X_batch.to(device,non_blocking=True), y_batch.to(device,non_blocking=True)
 
             optimizer.zero_grad()
@@ -56,7 +56,7 @@ def train_model(model,model_name, train_loader, val_loader,window_size_name, los
         val_loss = 0.0
         len_val_loss=0
         with torch.no_grad():
-            for X_val, y_val in val_loader:
+            for X_val, y_val, idx_batch in val_loader:
                 X_val, y_val = X_val.to(device,non_blocking=True), y_val.to(device,non_blocking=True)
 
                 y_pred = model(X_val)

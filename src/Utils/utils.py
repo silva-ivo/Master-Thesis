@@ -187,10 +187,9 @@ class RRMSELoss(nn.Module):
     
     
 def plot_predictions(y_true_cpu, y_pred_cpu, x_inputs_cpu, 
-                     num_windows, loss_function_name, mode, model_name, window_size_name, 
-                     save_folder="/data/home/silva/Documents/Pipline_2/Results"):
+                     num_windows, save_folder,win_size,lr_value,model_id):
 
-    save_dir = os.path.join(save_folder, mode, model_name, loss_function_name, window_size_name)
+    save_dir = os.path.join(save_folder,f"model{model_id}","PLOTS", "Predictions", f"window-{win_size}", f"lr-{lr_value}")
     os.makedirs(save_dir, exist_ok=True)
 
     for i in range(num_windows):
@@ -208,14 +207,14 @@ def plot_predictions(y_true_cpu, y_pred_cpu, x_inputs_cpu,
         plt.plot(x_input_np + jitter, label='Input Values', linestyle='-', linewidth=1.2, alpha=1, color='#D55E00')  # Dark orange
         plt.plot(y_true_np + jitter, label='True Values', linestyle='-', linewidth=1, alpha=0.8, color='#56B4E9')  # Light blue
         plt.plot(y_pred_np + jitter, label='Predicted Values', linestyle='-', linewidth=0.8, alpha=0.6, color='black')  # Black
-        plt.title(f'Predictions vs True Values (Window {random_index}, Channel {channel_idx}, Loss: {loss_function_name})')
+        plt.title(f'Predictions vs True Values (Window {random_index}, Channel {channel_idx})')
         plt.xlabel('Time Points')
         plt.ylabel('Values')
         plt.legend()
         plt.grid(True)
 
        
-        save_path1 = os.path.join(save_dir, f'combined_plot_loss-{loss_function_name}_window-{window_size_name}_channel-{channel_idx}_{i+1}.png')
+        save_path1 = os.path.join(save_dir, f'combined_plot-{i+1}.png')
         plt.savefig(save_path1)
         plt.close()
 
@@ -255,12 +254,10 @@ def plot_predictions(y_true_cpu, y_pred_cpu, x_inputs_cpu,
         # plt.close()
      
 
-def plot_loss(history, loss_function_name, mode, model_name, window_size_name, 
-              save_folder="/data/home/silva/Documents/Pipline_2/Results"):
-    
-
-    save_dir = os.path.join(save_folder, mode, model_name, loss_function_name, window_size_name)
+def plot_loss(history,save_folder,window_size,lr_value,model_id):
+    save_dir=os.path.join(save_folder,f"model{model_id}","PLOTS","LOSS", f"window-{window_size}", f"lr-{lr_value}")
     os.makedirs(save_dir, exist_ok=True)
+
 
     plt.figure(figsize=(10, 6))
     plt.plot(history['loss'], label='Training Loss', linestyle='-', marker='o', color='#1f77b4', markersize=6, linewidth=1.5)

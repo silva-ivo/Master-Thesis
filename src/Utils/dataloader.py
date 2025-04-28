@@ -3,7 +3,7 @@ import glob
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, Sampler, Subset
-from sklearn.model_selection import  GroupKFold
+from sklearn.model_selection import  GroupKFold,KFold
 from Utils import utils
 
 # Define EEGDataset and PatientBatchSampler classes for NESTED CV
@@ -86,6 +86,8 @@ def load_nested_cv_patients(data_base_dir, window_size, batch_size, outer_folds,
 
         X_patient, y_patient = utils.split_segments(np.array(inputs),np.array(targets) , window_size)
         
+        patient_id=patient_id.split("Filtered_Data_")[-1]
+        
         all_inputs.append(X_patient)
         all_targets.append(y_patient)
         patient_ids.extend([patient_id] * len(X_patient))  # Assign patient ID to each window
@@ -96,11 +98,12 @@ def load_nested_cv_patients(data_base_dir, window_size, batch_size, outer_folds,
     outer_cv = GroupKFold(n_splits=outer_folds)
     
     for outer_train_idx, outer_test_idx in outer_cv.split(patient_folders, groups=patient_folders):
+        
         test_patients = [patient_folders[i] for i in outer_test_idx]
         train_patients = [patient_folders[i] for i in outer_train_idx]
         
-        train_mask = np.isin(patient_ids, [os.path.basename(p) for p in train_patients])
-        test_mask = np.isin(patient_ids, [os.path.basename(p) for p in test_patients])
+        train_mask = np.isin(patient_ids, [os.path.basename(p).split("Filtered_Data_")[-1] for p in train_patients])
+        test_mask = np.isin(patient_ids, [os.path.basename(p).split("Filtered_Data_")[-1] for p in test_patients])
         
         X_train, y_train, p_train = all_inputs[train_mask], all_targets[train_mask], np.array(patient_ids)[train_mask]
         X_test, y_test = all_inputs[test_mask], all_targets[test_mask]
@@ -122,8 +125,7 @@ def load_nested_cv_patients(data_base_dir, window_size, batch_size, outer_folds,
             
             yield train_loader, val_loader, test_loader
 
-#Simpler dataloader         
-
+#Simpler dataloader-HOLD-ON         
 def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7, 0.15, 0.15)):
     
     patient_folders = sorted(glob.glob(os.path.join(data_base_dir, "Filtered_Data_pat*")))
@@ -180,3 +182,61 @@ def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7,
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False,pin_memory=True)
 
     return train_loader, val_loader, test_loader
+
+def load_all_patients(data_base_dir, window_size):
+    patient_folders = sorted(glob.glob(os.path.join(data_base_dir, "Filtered_Data_pat*")))
+    if not patient_folders:
+        raise FileNotFoundError("No patient folders found in Data directory.")
+    
+    all_inputs, all_targets, patient_ids = [], [], []
+    
+    for patient_folder in patient_folders:
+        patient_id = os.path.basename(patient_folder)
+        input_files = sorted(glob.glob(os.path.join(patient_folder, "original_filtered_segment_*.npy")))
+        target_files = sorted(glob.glob(os.path.join(data_base_dir, patient_id.replace("Filtered_", ""), "preprocessed_segment_*.npy")))
+        
+        if not input_files or not target_files:
+            continue
+        
+             
+        inputs= [np.load(f) for f in input_files]
+        targets = [np.load(f) for f in target_files]
+
+        patient_id=patient_id.split("Filtered_Data_")[-1]
+        
+        X_patient, y_patient = utils.split_segments(np.array(inputs),np.array(targets) , window_size)
+        X_patient,y_patient = utils.select_channels_per_patient(X_patient, y_patient, patient_id)
+        
+        patient_id=patient_id.split("Filtered_Data_")[-1]
+        
+        all_inputs.append(X_patient)
+        all_targets.append(y_patient)
+        patient_ids.extend([patient_id] * len(X_patient))  # Assign patient ID to each window
+    
+    all_inputs = np.concatenate(all_inputs, axis=0)
+    all_targets = np.concatenate(all_targets, axis=0)
+    
+    return all_inputs, all_targets, patient_ids
+
+def get_nested_cv_loaders (all_inputs, all_targets, batch_size=32, inner_folds=5):
+
+    # Use all data for splitting
+    data_indices = np.arange(len(all_inputs) // 2)# Create indices for all data
+
+    # Initialize KFold for splitting all data
+    inner_cv = KFold(n_splits=inner_folds, shuffle=True, random_state=42)
+    
+    for inner_train_idx, inner_val_idx in inner_cv.split(data_indices):
+        # Split data based on indices
+        X_train, y_train = all_inputs[inner_train_idx], all_targets[inner_train_idx]
+        X_val, y_val = all_inputs[inner_val_idx], all_targets[inner_val_idx]
+        
+        # Create datasets
+        train_dataset = EEGDataset(X_train, y_train, inner_train_idx)
+        val_dataset = EEGDataset(X_val, y_val, inner_val_idx)
+        
+        # Create data loaders
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
+        
+        yield train_loader, val_loader

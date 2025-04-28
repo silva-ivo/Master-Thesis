@@ -50,10 +50,10 @@ for outer_fold, (train_loader, val_loader, test_loader) in enumerate(
     #     # Evaluate model
     # X_test_tensor, y_true_test_tensor, y_pred_test_tensor = test.tester.evalute_model(model,test_loader,device)
 
-    pcc = metrics.compute_pcc(y_true_test_tensor, y_pred_test_tensor)
-    snr_diff = metrics.compute_snr_diff(y_true_test_tensor, y_pred_test_tensor, X_test_tensor)
-    rmse = metrics.compute_rmse(y_true_test_tensor, y_pred_test_tensor)
-    rrmse = metrics.compute_rrmse(y_true_test_tensor, y_pred_test_tensor)
+    pcc = metrics.compute_pcc(y_true_val_tensor, y_pred_val_tensor)
+    snr_diff = metrics.compute_snr_diff(y_true_val_tensor, y_pred_val_tensor, X_val_tensor)
+    rmse = metrics.compute_rmse(y_true_val_tensor, y_pred_val_tensor)
+    rrmse = metrics.compute_rrmse(y_true_val_tensor, y_pred_val_tensor)
 
     all_pcc.append(pcc)
     all_snr_diff.append(snr_diff)
