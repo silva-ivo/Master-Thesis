@@ -2,39 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
-class OneD_ResCNN(nn.Module):
-    def __init__(self, input_shape):
-        super(OneD_ResCNN, self).__init__()
-        self.conv_initial = nn.Conv1d(input_shape, 32, 5, padding='same')
-        self.bn_initial = nn.BatchNorm1d(32)
-        self.resblock1 = ResidualBlock_OneD_ResCNN(32, 32, 3)
-        self.resblock2 = ResidualBlock_OneD_ResCNN(32, 32, 5)
-        self.resblock3 = ResidualBlock_OneD_ResCNN(32, 32, 7)
-        self.conv_final = nn.Conv1d(96, 32, 1, padding='same')
-        self.bn_final = nn.BatchNorm1d(32)
-        self.fc = nn.Linear(32, 19)
-
-    def forward(self, x):
-        x = x.permute(0, 2, 1)  
-        x = F.relu(self.bn_initial(self.conv_initial(x)))  
-        x1 = self.resblock1(x)
-        x2 = self.resblock2(x)
-        x3 = self.resblock3(x)
-
-
-        x = torch.cat((x1, x2, x3), dim=1)
-    
-
-        x = F.relu(self.bn_final(self.conv_final(x)))
-
-        x = x.permute(0, 2, 1)  # Change (batch, 32, 1280) → (batch, 1280, 32)
-
-        x = self.fc(x)  # Should output (batch, 1280, 19)
-        #print(f"Shape after fc: {x.shape}")  # Expect (batch, 1280, 19)
-
-        return x
-
         
 #Modelo do Fábio 
 class OneD_DCNN(nn.Module): 
@@ -79,7 +46,6 @@ class OneD_DCNN(nn.Module):
         x=self.model(x)
         x = x.permute(0, 2, 1)
         return x
-
 
 class ReslBlock_RestNet_1D_DCNN(nn.Module):
     def __init__(self, in_channels, out_channels,kernel_size, stride=1):
@@ -148,30 +114,8 @@ class RestNet_1D_DCNN(nn.Module):
         x = x.permute(0, 2, 1)
         return x
 
-class RestNet_1D_DCNN_simpler(nn.Module):
-    def __init__(self, input_channels):
-        super(RestNet_1D_DCNN_simpler, self).__init__()
 
-        # Use only 2 residual blocks
-        self.res_block1 = ReslBlock_RestNet_1D_DCNN(input_channels, 32, 7)   # First residual block
-        self.res_block2 = ReslBlock_RestNet_1D_DCNN(32, 64, 5)   # Second residual block
-
-        # Final convolution layer to match the input channels
-        self.final = nn.Conv1d(64, input_channels, kernel_size=3, stride=1, padding="same")
-       
-    def forward(self, x):
-        x = x.permute(0, 2, 1)  # Convert to the right shape for Conv1d
-        x = self.res_block1(x)
-        x = self.res_block2(x)
-        x = self.final(x)
-        x = x.permute(0, 2, 1)  # Convert back to the original shape
-        return x
-
-
-
-
-
-
+## RESNET 1D with residual connections
 class ResBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, use_residual=True, dropout_rate=0.1):
         super(ResBlock, self).__init__()
@@ -212,7 +156,6 @@ class ResBlock(nn.Module):
         out = self.activation(out)
         return out
 
-
 class EEGResNet1D(nn.Module):
     def __init__(self, input_channels, num_blocks, channels, kernel_sizes, use_residual=True, dropout_rate=0.1):
         super(EEGResNet1D, self).__init__()
@@ -244,3 +187,97 @@ class EEGResNet1D(nn.Module):
         x = self.final(x)
         x = x.permute(0, 2, 1)  # [B, T, C]
         return x
+    
+## RESNET 1D with Squeeze-and-Excitation block   
+class SELayer1D(nn.Module):
+    def __init__(self, channel, reduction=16):
+        super(SELayer1D, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool1d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):  # x: [B, C, T]
+        b, c, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1)
+        return x * y.expand_as(x)
+    
+class SE_ResBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, use_residual=True, dropout_rate=0.1,reduction=16):
+        super(ResBlock, self).__init__()
+        self.use_residual = use_residual
+
+        self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size, padding='same')
+        self.bn1 = nn.BatchNorm1d(out_channels)
+        self.dropout1 = nn.Dropout(dropout_rate)
+
+        self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size, padding='same')
+        self.bn2 = nn.BatchNorm1d(out_channels)
+
+        # Squeeze-and-Excitation block
+        reduction = max(4, out_channels // 16)
+        self.se = SELayer1D(out_channels, reduction)
+
+        if self.use_residual and (in_channels != out_channels):
+            self.shortcut = nn.Sequential(
+                nn.Conv1d(in_channels, out_channels, kernel_size=1, padding='same'),
+                nn.BatchNorm1d(out_channels)
+            )
+        else:
+            self.shortcut = nn.Identity()
+
+        self.activation = nn.LeakyReLU(0.2)
+        self.dropout2 = nn.Dropout(dropout_rate)
+
+    def forward(self, x):
+        residual = self.shortcut(x)
+        out = self.activation(self.bn1(self.conv1(x)))
+        out = self.dropout1(out)
+
+        out = self.bn2(self.conv2(out))
+        out = self.se(out)
+
+        if self.use_residual:
+            out += residual
+
+        out = self.activation(out)
+        out = self.dropout2(out)
+
+        return out
+
+class SE_ResNet1D(nn.Module):
+    def __init__(self, input_channels, num_blocks, channels, kernel_sizes, use_residual=True, dropout_rate=0.1):
+        super(EEGResNet1D, self).__init__()
+        assert num_blocks == len(channels) == len(kernel_sizes), \
+            "Length of channels and kernel_sizes must match num_blocks"
+
+        self.blocks = nn.ModuleList()
+        in_ch = input_channels
+
+        for i in range(num_blocks):
+            out_ch = channels[i]
+            k = kernel_sizes[i]
+            block = SE_ResBlock(
+                in_channels=in_ch,
+                out_channels=out_ch,
+                kernel_size=k,
+                use_residual=use_residual,
+                dropout_rate=dropout_rate
+            )
+            self.blocks.append(block)
+            in_ch = out_ch
+
+        self.final = nn.Conv1d(in_ch, input_channels, kernel_size=3, padding='same')
+
+    def forward(self, x):
+        x = x.permute(0, 2, 1)  # [B, C, T]
+        for block in self.blocks:
+            x = block(x)
+        x = self.final(x)
+        x = x.permute(0, 2, 1)  # [B, T, C]
+        return x
+ 
