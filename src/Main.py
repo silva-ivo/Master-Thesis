@@ -35,12 +35,12 @@ use_residual_options = [True, False]
 dropout_rates = [0.1] #[0,0.3]
 
 # === Training parameter space ===
-window_size = {"5s": 1280, "10s": 2560} #"30s": 7680, "1min": 15360}
+window_size = {"5s": 1280, "30s": 7680} #"30s": 7680, "1min": 15360,"10s": 2560 }
 batch_size = {"32": 32}
 loss_function = {
     "RRMSELoss": ut.RRMSELoss(),
     # "MSELoss": nn.MSELoss(),
-    # "MAELoss": nn.L1Loss(),
+     "MAELoss": nn.L1Loss(),
 }
 lr = {"0.01": 0.01,"0.001": 0.001, "0.0001": 0.0001}
 
