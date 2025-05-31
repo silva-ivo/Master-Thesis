@@ -34,19 +34,19 @@ os.makedirs(model_config_file, exist_ok=True)
 dropout_rates = [0.1] #0.3 ,0
 
 # === Training parameter space ===
-window_size = {"5s": 1280,"30s": 7680} #"10s": 2560, "1min": 15360
+window_size = {"5s": 1280} #"10s": 2560, "1min": 15360, "30s": 7680
 batch_size = {"32": 32}
 loss_function = {
     "RRMSELoss": ut.RRMSELoss(),
     #"MSELoss": nn.MSELoss(),
-    "MAELoss": nn.L1Loss(),
+    #"MAELoss": nn.L1Loss(),
 }
-lr = {"0.01": 0.01, "0.001": 0.001, "0.0001": 0.0001}
+lr = {"0.01": 0.01, "0.001": 0.001} # "0.0001": 0.0001
 
 # === Available models ===
 models_dict = {
-    "UNet_3": DAE_models.UNet_3,
-    "UNet_4": DAE_models.UNet_4,
+    #"UNet_3": DAE_models.UNet_3,
+    #"UNet_4": DAE_models.UNet_4,
     "UNet_5": DAE_models.UNet_5,
 }
 
@@ -57,6 +57,7 @@ for model_name, model_class in models_dict.items():
             window_size_value = window_size[win_size_key]
             all_inputs,all_targets,all_pat_ids = dataloader.load_all_patients(data_base_dir, window_size_value)
             for lr_key in lr.keys():
+            
                 batch_size_value = batch_size["32"]
                 lr_value = lr[lr_key]
 
@@ -65,13 +66,13 @@ for model_name, model_class in models_dict.items():
                 print(f"  Window: {win_size_key}, Loss:{loss_key}, LR: {lr_key}")
                 all_pcc,all_snr_diff,all_rmse,all_rrmse = [],[],[],[]
                 inner_fold=0
-                 # === Get dataloaders ===
+                # === Get dataloaders ===
                 for train_loader,val_loader in dataloader.get_nested_cv_loaders(all_inputs,all_targets):
                     print(f"Inner trainning loop:{inner_fold}")
                     # === Model ===
-                    model = model_class
+                    model = model_class(dropout=0.1)
             
-                    model_name = f"model{model_name}_{win_size_key}_{loss_key}_{lr_key}_{inner_fold}"
+                    
                     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
                     # === Train ===
@@ -127,7 +128,6 @@ for model_name, model_class in models_dict.items():
                                 header=not os.path.exists(model_results_file_id))
 
                     # # === Plots (optional) ===
-                ut.plot_loss(history,model_config_file, win_size_key,lr_key,model_name)
-                ut.plot_predictions(y_true, y_pred, x_input, 15, model_config_file,win_size_key,lr_key,model_name)
+                ut.plot_loss(history,model_config_file, win_size_key,lr_key,model_name,loss_key)
+                ut.plot_predictions(y_true, y_pred, x_input, 15, model_config_file,win_size_key,lr_key,model_name,loss_key)
 
-        

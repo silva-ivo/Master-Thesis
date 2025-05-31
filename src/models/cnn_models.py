@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
         
-#Modelo do Fábio 
+#Model Fábio 
 class OneD_DCNN(nn.Module): 
     def __init__(self, input_channels):
         super(OneD_DCNN, self).__init__()
@@ -47,6 +47,7 @@ class OneD_DCNN(nn.Module):
         x = x.permute(0, 2, 1)
         return x
 
+#Model fábio with residual connections
 class ReslBlock_RestNet_1D_DCNN(nn.Module):
     def __init__(self, in_channels, out_channels,kernel_size, stride=1):
         super(ReslBlock_RestNet_1D_DCNN, self).__init__()
@@ -115,7 +116,7 @@ class RestNet_1D_DCNN(nn.Module):
         return x
 
 
-## RESNET 1D with residual connections
+## RESNET 1D with residual connections for grid search
 class ResBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, use_residual=True, dropout_rate=0.1):
         super(ResBlock, self).__init__()
@@ -129,8 +130,8 @@ class ResBlock(nn.Module):
         self.bn2 = nn.BatchNorm1d(out_channels)
         self.dropout2 = nn.Dropout(dropout_rate)
 
-        self.conv3 = nn.Conv1d(out_channels, out_channels, kernel_size, padding='same')
-        self.bn3 = nn.BatchNorm1d(out_channels)
+        # self.conv3 = nn.Conv1d(out_channels, out_channels, kernel_size, padding='same')
+        # self.bn3 = nn.BatchNorm1d(out_channels)
 
         if self.use_residual and (in_channels != out_channels):
             self.shortcut = nn.Sequential(
@@ -147,8 +148,8 @@ class ResBlock(nn.Module):
         out = self.activation(self.bn1(self.conv1(x)))
         out = self.dropout1(out)
         out = self.activation(self.bn2(self.conv2(out)))
-        out = self.dropout2(out)
-        out = self.bn3(self.conv3(out))
+        # out = self.dropout2(out)
+        # out = self.bn3(self.conv3(out))
 
         if self.use_residual:
             out += residual
@@ -208,7 +209,7 @@ class SELayer1D(nn.Module):
     
 class SE_ResBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, use_residual=True, dropout_rate=0.1,reduction=16):
-        super(ResBlock, self).__init__()
+        super(SE_ResBlock, self).__init__()
         self.use_residual = use_residual
 
         self.conv1 = nn.Conv1d(in_channels, out_channels, kernel_size, padding='same')
@@ -217,6 +218,7 @@ class SE_ResBlock(nn.Module):
 
         self.conv2 = nn.Conv1d(out_channels, out_channels, kernel_size, padding='same')
         self.bn2 = nn.BatchNorm1d(out_channels)
+        self.dropout2= nn.Dropout(dropout_rate)
 
         # Squeeze-and-Excitation block
         reduction = max(4, out_channels // 16)
@@ -231,7 +233,7 @@ class SE_ResBlock(nn.Module):
             self.shortcut = nn.Identity()
 
         self.activation = nn.LeakyReLU(0.2)
-        self.dropout2 = nn.Dropout(dropout_rate)
+       
 
     def forward(self, x):
         residual = self.shortcut(x)
@@ -239,19 +241,18 @@ class SE_ResBlock(nn.Module):
         out = self.dropout1(out)
 
         out = self.bn2(self.conv2(out))
+        out = self.dropout2(out)
         out = self.se(out)
 
         if self.use_residual:
             out += residual
 
         out = self.activation(out)
-        out = self.dropout2(out)
-
         return out
 
 class SE_ResNet1D(nn.Module):
     def __init__(self, input_channels, num_blocks, channels, kernel_sizes, use_residual=True, dropout_rate=0.1):
-        super(EEGResNet1D, self).__init__()
+        super(SE_ResNet1D, self).__init__()
         assert num_blocks == len(channels) == len(kernel_sizes), \
             "Length of channels and kernel_sizes must match num_blocks"
 

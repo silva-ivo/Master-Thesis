@@ -183,6 +183,8 @@ def get_dataloaders(data_base_dir, window_size, batch_size=32, split_ratio=(0.7,
 
     return train_loader, val_loader, test_loader
 
+
+# Simplified dataloader for loading all patients
 def load_all_patients(data_base_dir, window_size):
     patient_folders = sorted(glob.glob(os.path.join(data_base_dir, "Filtered_Data_pat*")))
     if not patient_folders:
@@ -218,10 +220,12 @@ def load_all_patients(data_base_dir, window_size):
     
     return all_inputs, all_targets, patient_ids
 
+
+#NESTED_CV just for inner folds
 def get_nested_cv_loaders (all_inputs, all_targets, batch_size=32, inner_folds=5):
 
     # Use all data for splitting
-    data_indices = np.arange(len(all_inputs) // 2)# Create indices for all data
+    data_indices = np.arange(len(all_inputs) //2)# Create indices for all data
 
     # Initialize KFold for splitting all data
     inner_cv = KFold(n_splits=inner_folds, shuffle=True, random_state=42)

@@ -7,7 +7,7 @@ import os
 
 def train_model(model,model_name, train_loader, val_loader,window_size_name, loss_function,loss_function_name, device, num_epochs, early_stopping_patience,lr):
     print(f"Estou no treino")
-    model_save_path=f"/data/home/silva/Documents/Pipline_2/Data/Results/DCNn_GridSearch/Phase_1/{model_name}"
+    model_save_path=f"/data/home/silva/Documents/Pipline_2/Data/Results/DCNn_GridSearch/Phase_/{model_name}"
     os.makedirs(model_save_path, exist_ok=True)  
     save_path_bestmodel = os.path.join(model_save_path, "best_model.pth")
         

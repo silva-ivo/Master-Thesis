@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import cnn_models
 
 
 
@@ -155,6 +156,7 @@ class CNN_LSTM_Autoencoder(nn.Module):
         return x
 
 
+# VGG Block for UNet
 class VGGBlock(nn.Module):
     def __init__(self, in_channels, middle_channels, out_channels, ks,dropout=0.0):
         super().__init__()
@@ -179,7 +181,8 @@ class VGGBlock(nn.Module):
         out = self.dropout(out)
 
         return out
-    
+  
+# UNet model with VGG blocks with different depths
 class UNet_3(nn.Module):
     def __init__(self, num_classes=2, input_channels=2,dropout=0, **kwargs):
         super().__init__()
@@ -301,3 +304,129 @@ class UNet_5(nn.Module):
         output = self.final(x0_4)
         output = output.permute(0, 2, 1)
         return output
+    
+
+# UNet models with Squeeze-and-Excitation ResBlocks
+class SE_UNet_3(nn.Module):
+    def __init__(self, num_classes=2, input_channels=2, **kwargs):
+        super().__init__()
+
+        nb_filter = [16, 32, 64]
+
+        self.pool = nn.MaxPool1d(2)
+        self.up = nn.Upsample(scale_factor=2, mode='linear', align_corners=False)
+
+      
+        self.conv0_0 = cnn_models.SE_ResBlock(input_channels, nb_filter[0],7)
+        self.conv1_0 = cnn_models.SE_ResBlock(nb_filter[0], nb_filter[1],5)
+        
+        
+        self.conv2_0 = cnn_models.SE_ResBlock(nb_filter[1], nb_filter[2], 3)
+        
+        self.conv3_1 = cnn_models.SE_ResBlock(nb_filter[1] + nb_filter[2], nb_filter[1],5)
+        self.conv2_2 = cnn_models.SE_ResBlock(nb_filter[0] + nb_filter[1], nb_filter[0],7)
+ 
+        self.final = nn.Conv1d(nb_filter[0], num_classes, kernel_size=1, padding=0)
+
+
+    def forward(self, input):
+        input = input.permute(0, 2, 1) 
+        
+        x0_0 = self.conv0_0(input)
+        x1_0 = self.conv1_0(self.pool(x0_0))
+        
+        x2_0 = self.conv2_0(self.pool(x1_0))
+        
+        x1_1 = self.conv3_1(torch.cat([x1_0, self.up(x2_0)], dim=1)) 
+        x0_2 = self.conv2_2(torch.cat([x0_0, self.up(x1_1)], dim=1))
+
+        output = self.final(x0_2)
+        output = output.permute(0, 2, 1)
+        return output
+    
+class SE_UNet_4(nn.Module):
+    def __init__(self, num_classes=2, input_channels=2,dropout=0, **kwargs):
+        super().__init__()
+
+        nb_filter = [16, 32, 64, 128]
+
+        self.pool = nn.MaxPool1d(2)
+        
+        self.up = nn.Upsample(scale_factor=2, mode='linear', align_corners=False)
+
+        
+        self.conv0_0 = cnn_models.SE_ResBlock(input_channels, nb_filter[0],7)
+        self.conv1_0 = cnn_models.SE_ResBlock(nb_filter[0], nb_filter[1], 5)
+        self.conv2_0 = cnn_models.SE_ResBlock(nb_filter[1], nb_filter[2], 3)
+        
+        self.conv3_0 = cnn_models.SE_ResBlock(nb_filter[2], nb_filter[3], 3)
+    
+        self.conv3_1 = cnn_models.SE_ResBlock(nb_filter[2] + nb_filter[3], nb_filter[2], 3)
+        self.conv2_2 = cnn_models.SE_ResBlock(nb_filter[1] + nb_filter[2], nb_filter[1], 5)
+        self.conv1_3 = cnn_models.SE_ResBlock(nb_filter[0] + nb_filter[1], nb_filter[0], 7)
+    
+
+        self.final = nn.Conv1d(nb_filter[0], num_classes, kernel_size=1, padding=0)
+
+
+    def forward(self, input):
+        input = input.permute(0, 2, 1) 
+        x0_0 = self.conv0_0(input)
+        x1_0 = self.conv1_0(self.pool(x0_0))
+        x2_0 = self.conv2_0(self.pool(x1_0))
+        
+        x3_0 = self.conv3_0(self.pool(x2_0))
+
+
+        x2_1 = self.conv3_1(torch.cat([x2_0, self.up(x3_0)], dim=1))  
+        x1_2 = self.conv2_2(torch.cat([x1_0, self.up(x2_1)], dim=1))
+        x0_3 = self.conv1_3(torch.cat([x0_0, self.up(x1_2)], dim=1))
+    
+
+        output = self.final(x0_3)
+        output = output.permute(0, 2, 1)
+        return output   
+
+class SE_UNet_5(nn.Module):
+    def __init__(self, num_classes=2, input_channels=2,dropout=0, **kwargs):
+        super().__init__()
+
+        nb_filter = [16, 32, 64, 128, 256 ]
+
+        self.pool = nn.MaxPool1d(2)
+   
+        self.up = nn.Upsample(scale_factor=2, mode='linear', align_corners=False)
+
+        self.conv0_0 = cnn_models.SE_ResBlock(input_channels, nb_filter[0], 7)
+        self.conv1_0 = cnn_models.SE_ResBlock(nb_filter[0], nb_filter[1], 5)
+        self.conv2_0 = cnn_models.SE_ResBlock(nb_filter[1], nb_filter[2], 5)
+        self.conv3_0 = cnn_models.SE_ResBlock(nb_filter[2], nb_filter[3], 3)
+       
+        self.conv4_0 = cnn_models.SE_ResBlock(nb_filter[3], nb_filter[4], 3)
+
+        self.conv3_1 = cnn_models.SE_ResBlock(nb_filter[3] + nb_filter[4], nb_filter[3], 3)
+        self.conv2_2 = cnn_models.SE_ResBlock(nb_filter[2] + nb_filter[3], nb_filter[2], 5)
+        self.conv1_3 = cnn_models.SE_ResBlock(nb_filter[1] + nb_filter[2], nb_filter[1], 5)
+        self.conv0_4 = cnn_models.SE_ResBlock(nb_filter[0] + nb_filter[1], nb_filter[0], 7)
+
+        self.final = nn.Conv1d(nb_filter[0], num_classes, kernel_size=1, padding=0)
+
+
+    def forward(self, input):
+        input = input.permute(0, 2, 1) 
+        x0_0 = self.conv0_0(input)
+        x1_0 = self.conv1_0(self.pool(x0_0))
+        x2_0 = self.conv2_0(self.pool(x1_0))
+        x3_0 = self.conv3_0(self.pool(x2_0))
+       
+        x4_0 = self.conv4_0(self.pool(x3_0))
+
+        x3_1 = self.conv3_1(torch.cat([x3_0, self.up(x4_0)], dim=1))  
+        x2_2 = self.conv2_2(torch.cat([x2_0, self.up(x3_1)], dim=1))
+        x1_3 = self.conv1_3(torch.cat([x1_0, self.up(x2_2)], dim=1))
+        x0_4 = self.conv0_4(torch.cat([x0_0, self.up(x1_3)], dim=1))
+
+        output = self.final(x0_4)
+        output = output.permute(0, 2, 1)
+        return output
+    

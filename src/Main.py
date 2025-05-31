@@ -24,25 +24,25 @@ data_base_dir = "/data/home/silva/Documents/Pipline_2/Data"
 
 
 # === Paths ===
-model_config_file = "/data/home/silva/Documents/Pipline_2/Results/DCNN_GridSearch/Phase_2"
+model_config_file = "/data/home/silva/Documents/Pipline_2/Results/DCNN_GridSearch/Phase_2.1"
 os.makedirs(os.path.dirname(model_config_file), exist_ok=True)
 
 # === Model parameter space ===
-num_blocks_options = [2, 3, 4]
+num_blocks_options = [2,3,4] #2,3
 channels_options = [[32, 64], [32, 64, 128], [32, 64, 128, 256]]
 kernel_sizes_options = [[7, 5], [7, 5, 3], [9, 7, 5, 3]]
-use_residual_options = [True, False]
+use_residual_options = [True]
 dropout_rates = [0.1] #[0,0.3]
 
 # === Training parameter space ===
-window_size = {"5s": 1280, "30s": 7680} #"30s": 7680, "1min": 15360,"10s": 2560 }
+window_size = {"5s": 1280} #"30s": 7680, "1min": 15360,"10s": 2560 }
 batch_size = {"32": 32}
 loss_function = {
     "RRMSELoss": ut.RRMSELoss(),
     # "MSELoss": nn.MSELoss(),
-     "MAELoss": nn.L1Loss(),
+     #"MAELoss": nn.L1Loss(),
 }
-lr = {"0.01": 0.01,"0.001": 0.001, "0.0001": 0.0001}
+lr = {"0.001": 0.001, "0.0001": 0.0001}#"0.01": 0.01,
 
 model_id=0
   
@@ -72,7 +72,7 @@ for num_blocks in num_blocks_options:
                     df_model_config.to_csv(model_config_file_id, mode='a', index=False,
                                             header=not os.path.exists(model_config_file_id))
                 
-                    
+                
                     
                     # === For each valid training config ===
                     for win_size_key in window_size.keys():
@@ -163,7 +163,7 @@ for num_blocks in num_blocks_options:
                                             header=not os.path.exists(model_results_file_id))
 
                                 # # === Plots (optional) ===
-                            ut.plot_loss(history,model_config_file, win_size_key,lr_key,model_id)
-                            ut.plot_predictions(y_true, y_pred, x_input, 15, model_config_file,win_size_key,lr_key,model_id)
+                            ut.plot_loss(history,model_config_file, win_size_key,lr_key,model_id,"RRMSELoss")
+                            ut.plot_predictions(y_true, y_pred, x_input, 15, model_config_file,win_size_key,lr_key,model_id,"RRMSELoss")
 
                     model_id += 1
