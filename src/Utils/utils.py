@@ -187,9 +187,9 @@ class RRMSELoss(nn.Module):
     
     
 def plot_predictions(y_true_cpu, y_pred_cpu, x_inputs_cpu, 
-                     num_windows, save_folder,win_size,lr_value,model_id,loss_name):
+                     num_windows, save_folder,win_size,reduction,model_id,loss_name):
 
-    save_dir = os.path.join(save_folder,f"model{model_id}","PLOTS", "Predictions",f"Loss-{loss_name}" f"window-{win_size}", f"lr-{lr_value}")
+    save_dir = os.path.join(save_folder,f"model{model_id}","PLOTS", "Predictions",f"Loss-{loss_name}" f"window-{win_size}", f"reduction-{reduction}")
     os.makedirs(save_dir, exist_ok=True)
 
     for i in range(num_windows):
@@ -254,8 +254,8 @@ def plot_predictions(y_true_cpu, y_pred_cpu, x_inputs_cpu,
         # plt.close()
      
 
-def plot_loss(history,save_folder,window_size,lr_value,model_id,loss_name):
-    save_dir=os.path.join(save_folder,f"model{model_id}","PLOTS","LOSS",f"Loss fucntion-{loss_name}" f"window-{window_size}", f"lr-{lr_value}")
+def plot_loss(history,save_folder,window_size,reduction,model_id,loss_name):
+    save_dir=os.path.join(save_folder,f"model{model_id}","PLOTS","LOSS",f"Loss fucntion-{loss_name}" f"window-{window_size}", f"reduction-{reduction}")
     os.makedirs(save_dir, exist_ok=True)
 
 

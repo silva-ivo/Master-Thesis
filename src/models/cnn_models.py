@@ -251,7 +251,7 @@ class SE_ResBlock(nn.Module):
         return out
 
 class SE_ResNet1D(nn.Module):
-    def __init__(self, input_channels, num_blocks, channels, kernel_sizes, use_residual=True, dropout_rate=0.1):
+    def __init__(self, input_channels, num_blocks, channels, kernel_sizes, reduction, use_residual=True, dropout_rate=0.1):
         super(SE_ResNet1D, self).__init__()
         assert num_blocks == len(channels) == len(kernel_sizes), \
             "Length of channels and kernel_sizes must match num_blocks"
@@ -267,7 +267,8 @@ class SE_ResNet1D(nn.Module):
                 out_channels=out_ch,
                 kernel_size=k,
                 use_residual=use_residual,
-                dropout_rate=dropout_rate
+                dropout_rate=dropout_rate,
+                reduction=reduction
             )
             self.blocks.append(block)
             in_ch = out_ch

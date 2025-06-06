@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import cnn_models
+import models.cnn_models as cnn_models
 
 
 
@@ -388,7 +388,7 @@ class SE_UNet_4(nn.Module):
         return output   
 
 class SE_UNet_5(nn.Module):
-    def __init__(self, num_classes=2, input_channels=2,dropout=0, **kwargs):
+    def __init__(self, num_classes=2, input_channels=2,reduction=16,dropout=0, **kwargs):
         super().__init__()
 
         nb_filter = [16, 32, 64, 128, 256 ]
@@ -397,17 +397,17 @@ class SE_UNet_5(nn.Module):
    
         self.up = nn.Upsample(scale_factor=2, mode='linear', align_corners=False)
 
-        self.conv0_0 = cnn_models.SE_ResBlock(input_channels, nb_filter[0], 7)
-        self.conv1_0 = cnn_models.SE_ResBlock(nb_filter[0], nb_filter[1], 5)
-        self.conv2_0 = cnn_models.SE_ResBlock(nb_filter[1], nb_filter[2], 5)
-        self.conv3_0 = cnn_models.SE_ResBlock(nb_filter[2], nb_filter[3], 3)
+        self.conv0_0 = cnn_models.SE_ResBlock(input_channels, nb_filter[0], 7,reduction=reduction)
+        self.conv1_0 = cnn_models.SE_ResBlock(nb_filter[0], nb_filter[1], 5,reduction=reduction)
+        self.conv2_0 = cnn_models.SE_ResBlock(nb_filter[1], nb_filter[2], 5,reduction=reduction)
+        self.conv3_0 = cnn_models.SE_ResBlock(nb_filter[2], nb_filter[3], 3,reduction=reduction)
        
         self.conv4_0 = cnn_models.SE_ResBlock(nb_filter[3], nb_filter[4], 3)
 
-        self.conv3_1 = cnn_models.SE_ResBlock(nb_filter[3] + nb_filter[4], nb_filter[3], 3)
-        self.conv2_2 = cnn_models.SE_ResBlock(nb_filter[2] + nb_filter[3], nb_filter[2], 5)
-        self.conv1_3 = cnn_models.SE_ResBlock(nb_filter[1] + nb_filter[2], nb_filter[1], 5)
-        self.conv0_4 = cnn_models.SE_ResBlock(nb_filter[0] + nb_filter[1], nb_filter[0], 7)
+        self.conv3_1 = cnn_models.SE_ResBlock(nb_filter[3] + nb_filter[4], nb_filter[3], 3,reduction=reduction)
+        self.conv2_2 = cnn_models.SE_ResBlock(nb_filter[2] + nb_filter[3], nb_filter[2], 5,reduction=reduction)
+        self.conv1_3 = cnn_models.SE_ResBlock(nb_filter[1] + nb_filter[2], nb_filter[1], 5,reduction=reduction)
+        self.conv0_4 = cnn_models.SE_ResBlock(nb_filter[0] + nb_filter[1], nb_filter[0], 7,reduction=reduction)
 
         self.final = nn.Conv1d(nb_filter[0], num_classes, kernel_size=1, padding=0)
 

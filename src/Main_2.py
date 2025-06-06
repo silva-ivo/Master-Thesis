@@ -1,7 +1,7 @@
 from Utils import dataloader
 from Utils import utils as ut
 from Utils import metrics   
-from models import cnn_models,DAE_models
+from models import DAE_models
 from train import trainer
 import torch
 from torch import nn
@@ -27,7 +27,7 @@ data_base_dir = "/data/home/silva/Documents/Pipline_2/Data"
 
 
 # === Paths ===
-model_config_file = "/data/home/silva/Documents/Pipline_2/Results/UNET_GridSearch/Phase_2"
+model_config_file = "/data/home/silva/Documents/Pipline_2/Results/SE_UNET_GridSearch/Phase_3"
 os.makedirs(model_config_file, exist_ok=True)
 
 # === Model parameter space ===
@@ -41,15 +41,15 @@ loss_function = {
     #"MSELoss": nn.MSELoss(),
     #"MAELoss": nn.L1Loss(),
 }
-lr = {"0.01": 0.01, "0.001": 0.001} # "0.0001": 0.0001
+lr = {"0.001": 0.001} # "0.01": 0.01 "0.0001": 0.0001
 
 # === Available models ===
 models_dict = {
-    #"UNet_3": DAE_models.UNet_3,
-    #"UNet_4": DAE_models.UNet_4,
-    "UNet_5": DAE_models.UNet_5,
+    #"SE_UNet_3": DAE_models.SE_UNet_3,
+    #"SE_UNet_4": DAE_models.SE_UNet_4,
+    "SE_UNet_5": DAE_models.SE_UNet_5,
 }
-
+reduction = {"8": 8, "4": 4}
 
 for model_name, model_class in models_dict.items():
     for loss_key, loss_value in loss_function.items():
@@ -57,77 +57,77 @@ for model_name, model_class in models_dict.items():
             window_size_value = window_size[win_size_key]
             all_inputs,all_targets,all_pat_ids = dataloader.load_all_patients(data_base_dir, window_size_value)
             for lr_key in lr.keys():
-            
-                batch_size_value = batch_size["32"]
-                lr_value = lr[lr_key]
+                for reduction_key, reduction_value in reduction.items():
+                    batch_size_value = batch_size["32"]
+                    lr_value = lr[lr_key]
 
-                print(f"Model {model_name}:")
+                    print(f"Model {model_name}:")
 
-                print(f"  Window: {win_size_key}, Loss:{loss_key}, LR: {lr_key}")
-                all_pcc,all_snr_diff,all_rmse,all_rrmse = [],[],[],[]
-                inner_fold=0
-                # === Get dataloaders ===
-                for train_loader,val_loader in dataloader.get_nested_cv_loaders(all_inputs,all_targets):
-                    print(f"Inner trainning loop:{inner_fold}")
-                    # === Model ===
-                    model = model_class(dropout=0.1)
-            
+                    print(f"  Window: {win_size_key}, Loss:{loss_key}, LR: {lr_key}")
+                    all_pcc,all_snr_diff,all_rmse,all_rrmse = [],[],[],[]
+                    inner_fold=0
+                    # === Get dataloaders ===
+                    for train_loader,val_loader in dataloader.get_nested_cv_loaders(all_inputs,all_targets):
+                        print(f"Inner trainning loop:{inner_fold}")
+                        # === Model ===
+                        model = model_class(reduction=reduction_value,dropout=0.1)
+                
+                        
+                        device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
+                        # === Train ===
+                        model, history, x_input, y_true, y_pred = trainer.train_model(
+                            model, model_name, train_loader, val_loader, win_size_key,
+                            loss_value,loss_key, device, num_epochs=400,
+                            early_stopping_patience=20, lr=lr_value
+                        )
+
+                        # === Metrics ===
+                        pcc = metrics.compute_pcc(y_true, y_pred)
+                        snr_diff = metrics.compute_snr_diff(y_true, y_pred, x_input)
+                        rmse = metrics.compute_rmse(y_true, y_pred)
+                        rrmse = metrics.compute_rrmse(y_true, y_pred)
+                        
+                        # Convert the tensors to scalar values using .item() before appending
+                        all_pcc.append(pcc.item() if isinstance(pcc, torch.Tensor) else pcc)
+                        all_snr_diff.append(snr_diff.item() if isinstance(snr_diff, torch.Tensor) else snr_diff)
+                        all_rmse.append(rmse.item() if isinstance(rmse, torch.Tensor) else rmse)
+                        all_rrmse.append(rrmse.item() if isinstance(rrmse, torch.Tensor) else rrmse)
+
+                        inner_fold += 1
+                        
+                    pcc_avg = np.mean(all_pcc)
+                    pcc_std = np.std(all_pcc)
                     
-                    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
-
-                    # === Train ===
-                    model, history, x_input, y_true, y_pred = trainer.train_model(
-                        model, model_name, train_loader, val_loader, win_size_key,
-                        loss_value,loss_key, device, num_epochs=400,
-                        early_stopping_patience=20, lr=lr_value
-                    )
-
-                    # === Metrics ===
-                    pcc = metrics.compute_pcc(y_true, y_pred)
-                    snr_diff = metrics.compute_snr_diff(y_true, y_pred, x_input)
-                    rmse = metrics.compute_rmse(y_true, y_pred)
-                    rrmse = metrics.compute_rrmse(y_true, y_pred)
+                    snr_diff_avg = np.mean(all_snr_diff)
+                    snr_diff_std = np.std(all_snr_diff)
                     
-                    # Convert the tensors to scalar values using .item() before appending
-                    all_pcc.append(pcc.item() if isinstance(pcc, torch.Tensor) else pcc)
-                    all_snr_diff.append(snr_diff.item() if isinstance(snr_diff, torch.Tensor) else snr_diff)
-                    all_rmse.append(rmse.item() if isinstance(rmse, torch.Tensor) else rmse)
-                    all_rrmse.append(rrmse.item() if isinstance(rrmse, torch.Tensor) else rrmse)
-
-                    inner_fold += 1
+                    rmse_avg = np.mean(all_rmse)
+                    rmse_std = np.std(all_rmse)
                     
-                pcc_avg = np.mean(all_pcc)
-                pcc_std = np.std(all_pcc)
-                
-                snr_diff_avg = np.mean(all_snr_diff)
-                snr_diff_std = np.std(all_snr_diff)
-                
-                rmse_avg = np.mean(all_rmse)
-                rmse_std = np.std(all_rmse)
-                
-                rrmse_avg = np.mean(all_rrmse)
-                rrmse_std = np.std(all_rrmse)
-                                        
-                
-                # === Save training result ===
-                result = {
-                "window_size": win_size_key,
-                "batch_size": "32",
-                "loss_function": loss_key,
-                "learning_rate": lr_key,
-                "pcc": f"{pcc_avg:.4f} ± {pcc_std:.4f}",
-                "snr_diff": f"{snr_diff_avg:.4f} ± {snr_diff_std:.4f}",
-                "rmse": f"{rmse_avg:.4f} ± {rmse_std:.4f}",
-                "rrmse": f"{rrmse_avg:.4f} ± {rrmse_std:.4f}",}
+                    rrmse_avg = np.mean(all_rrmse)
+                    rrmse_std = np.std(all_rrmse)
+                                            
+                    
+                    # === Save training result ===
+                    result = {
+                    "window_size": win_size_key,
+                    "batch_size": "32",
+                    "loss_function": loss_key,
+                    "learning_rate": lr_key,
+                    "pcc": f"{pcc_avg:.4f} ± {pcc_std:.4f}",
+                    "snr_diff": f"{snr_diff_avg:.4f} ± {snr_diff_std:.4f}",
+                    "rmse": f"{rmse_avg:.4f} ± {rmse_std:.4f}",
+                    "rrmse": f"{rrmse_avg:.4f} ± {rrmse_std:.4f}",}
 
-                
-                os.makedirs(os.path.join(model_config_file, f"model{model_name}"), exist_ok=True)
-                df_result = pd.DataFrame([result])
-                model_results_file_id = os.path.join(model_config_file,f"model{model_name}", f"model{model_name}_results.csv")
-                df_result.to_csv(model_results_file_id, mode='a', index=False,
-                                header=not os.path.exists(model_results_file_id))
+                    
+                    os.makedirs(os.path.join(model_config_file, f"model{model_name}"), exist_ok=True)
+                    df_result = pd.DataFrame([result])
+                    model_results_file_id = os.path.join(model_config_file,f"model{model_name}", f"model{model_name}_results.csv")
+                    df_result.to_csv(model_results_file_id, mode='a', index=False,
+                                    header=not os.path.exists(model_results_file_id))
 
-                    # # === Plots (optional) ===
-                ut.plot_loss(history,model_config_file, win_size_key,lr_key,model_name,loss_key)
-                ut.plot_predictions(y_true, y_pred, x_input, 15, model_config_file,win_size_key,lr_key,model_name,loss_key)
+                        # # === Plots (optional) ===
+                    ut.plot_loss(history,model_config_file, win_size_key,reduction_key,model_name,loss_key)
+                    ut.plot_predictions(y_true, y_pred, x_input, 15, model_config_file,win_size_key,reduction_key,model_name,loss_key)
 
