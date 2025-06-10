@@ -27,7 +27,7 @@ data_base_dir = "/data/home/silva/Documents/Pipline_2/Data"
 
 
 # === Paths ===
-model_config_file = "/data/home/silva/Documents/Pipline_2/Results/SE_UNET_GridSearch/Phase_3"
+model_config_file = "/data/home/silva/Documents/Pipline_2/Results/SE_UNET_GridSearch/Phase_3.1"
 os.makedirs(model_config_file, exist_ok=True)
 
 # === Model parameter space ===

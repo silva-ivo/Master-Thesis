@@ -24,13 +24,13 @@ data_base_dir = "/data/home/silva/Documents/Pipline_2/Data"
 
 
 # === Paths ===
-model_config_file = "/data/home/silva/Documents/Pipline_2/Results/SE_ResNet1D/Phase_3"
+model_config_file = "/data/home/silva/Documents/Pipline_2/Results/SE_ResNet1D/Phase_4"
 os.makedirs(os.path.dirname(model_config_file), exist_ok=True)
 
 # === Model parameter space ===
-num_blocks_options = [4] #2,3
-channels_options = [[32, 64, 128, 256]] #[32, 64], [32, 64, 128]
-kernel_sizes_options = [[9, 7, 5, 3]] #[7, 5], [7, 5, 3], 
+num_blocks_options = [5,6] #2,3,4
+channels_options = [[32, 64, 128, 256, 512],[32, 64, 128, 256, 512, 1024]] #[32, 64], [32, 64, 128], [32, 64, 128, 256]
+kernel_sizes_options = [[9, 7, 5, 3, 3],[9, 7, 5, 5, 3, 3]] #[7, 5], [7, 5, 3], [9, 7, 5, 3]
 use_residual_options = [True]
 dropout_rates = [0.1] #[0,0.3]
 
@@ -44,7 +44,7 @@ loss_function = {
 }
 lr = {"0.001": 0.001}#"0.01": 0.01,"0.0001": 0.0001
 
-reduction={"8":8,"4":4}
+reduction={"4":4} #"16":16,"8":8
 
 model_id=0
   
