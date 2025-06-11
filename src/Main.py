@@ -97,7 +97,7 @@ for num_blocks in num_blocks_options:
                                 
                                 
                                 # === Get dataloaders ===
-                                all_pcc,all_snr_diff,all_rmse,all_rrmse = [],[],[],[]
+                                all_pcc,all_snr_diff,all_rmse,all_rrmse,all_cpt = [],[],[],[],[]
                                 inner_fold=0
                                 
                                 for train_loader,val_loader in dataloader.get_nested_cv_loaders(all_inputs,all_targets):
@@ -127,12 +127,14 @@ for num_blocks in num_blocks_options:
                                     snr_diff = metrics.compute_snr_diff(y_true, y_pred, x_input)
                                     rmse = metrics.compute_rmse(y_true, y_pred)
                                     rrmse = metrics.compute_rrmse(y_true, y_pred)
+                                    cp_time=history['val_inference_time_ms']
                                     
                                     # Convert the tensors to scalar values using .item() before appending
                                     all_pcc.append(pcc.item() if isinstance(pcc, torch.Tensor) else pcc)
                                     all_snr_diff.append(snr_diff.item() if isinstance(snr_diff, torch.Tensor) else snr_diff)
                                     all_rmse.append(rmse.item() if isinstance(rmse, torch.Tensor) else rmse)
                                     all_rrmse.append(rrmse.item() if isinstance(rrmse, torch.Tensor) else rrmse)
+                                    all_cpt.append(cp_time)
 
                                     inner_fold += 1
                                     
@@ -148,6 +150,8 @@ for num_blocks in num_blocks_options:
                                 rrmse_avg = np.mean(all_rrmse)
                                 rrmse_std = np.std(all_rrmse)
                                                         
+                                cpt_avg = np.mean(all_cpt)
+                                cpt_std = np.std(all_cpt)
                                 
                                 # === Save training result ===
                                 result = {
@@ -159,7 +163,8 @@ for num_blocks in num_blocks_options:
                                 "pcc": f"{pcc_avg:.4f} ± {pcc_std:.4f}",
                                 "snr_diff": f"{snr_diff_avg:.4f} ± {snr_diff_std:.4f}",
                                 "rmse": f"{rmse_avg:.4f} ± {rmse_std:.4f}",
-                                "rrmse": f"{rrmse_avg:.4f} ± {rrmse_std:.4f}",}
+                                "rrmse": f"{rrmse_avg:.4f} ± {rrmse_std:.4f}",
+                                "cpt(ms)": f"{cpt_avg:.4f} ± {cpt_std:.4f}",}
 
                                 
                                 os.makedirs(os.path.join(model_config_file, f"model{model_id}"), exist_ok=True)
