@@ -468,10 +468,10 @@ class SE_UNet_6(nn.Module):
         x5_0 = self.conv5_0(self.pool(x4_0))
         
         x4_1 = self.conv4_1(torch.cat([x4_0, self.up(x5_0)], dim=1))
-        x3_2 = self.conv3_1(torch.cat([x3_0, self.up(x4_1)], dim=1))  
-        x2_3 = self.conv2_2(torch.cat([x2_0, self.up(x3_2)], dim=1))
-        x1_4 = self.conv1_3(torch.cat([x1_0, self.up(x2_3)], dim=1))
-        x0_5 = self.conv0_4(torch.cat([x0_0, self.up(x1_4)], dim=1))
+        x3_2 = self.conv3_2(torch.cat([x3_0, self.up(x4_1)], dim=1))  
+        x2_3 = self.conv2_3(torch.cat([x2_0, self.up(x3_2)], dim=1))
+        x1_4 = self.conv1_4(torch.cat([x1_0, self.up(x2_3)], dim=1))
+        x0_5 = self.conv0_5(torch.cat([x0_0, self.up(x1_4)], dim=1))
 
         output = self.final(x0_5)
         output = output.permute(0, 2, 1)
@@ -518,11 +518,11 @@ class SE_UNet_7(nn.Module):
         x6_0 = self.conv6_0(self.pool(x5_0))
         
         x5_1= self.conv5_1(torch.cat([x5_0, self.up(x6_0)], dim=1))
-        x4_2 = self.conv4_1(torch.cat([x4_0, self.up(x5_1)], dim=1))
-        x3_3 = self.conv3_1(torch.cat([x3_0, self.up(x4_2)], dim=1))  
-        x2_4 = self.conv2_2(torch.cat([x2_0, self.up(x3_3)], dim=1))
-        x1_5 = self.conv1_3(torch.cat([x1_0, self.up(x2_4)], dim=1))
-        x0_6 = self.conv0_4(torch.cat([x0_0, self.up(x1_5)], dim=1))
+        x4_2 = self.conv4_2(torch.cat([x4_0, self.up(x5_1)], dim=1))
+        x3_3 = self.conv3_3(torch.cat([x3_0, self.up(x4_2)], dim=1))  
+        x2_4 = self.conv2_4(torch.cat([x2_0, self.up(x3_3)], dim=1))
+        x1_5 = self.conv1_5(torch.cat([x1_0, self.up(x2_4)], dim=1))
+        x0_6 = self.conv0_6(torch.cat([x0_0, self.up(x1_5)], dim=1))
 
         output = self.final(x0_6)
         output = output.permute(0, 2, 1)

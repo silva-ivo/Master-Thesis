@@ -27,7 +27,7 @@ data_base_dir = "/data/home/silva/Documents/Pipline_2/Data"
 
 
 # === Paths ===
-model_config_file = "/data/home/silva/Documents/Pipline_2/Results/SE_UNET_GridSearch/Phase_3.1"
+model_config_file = "/data/home/silva/Documents/Pipline_2/Results/SE_UNET_GridSearch/Phase_4"
 os.makedirs(model_config_file, exist_ok=True)
 
 # === Model parameter space ===
@@ -47,7 +47,9 @@ lr = {"0.001": 0.001} # "0.01": 0.01 "0.0001": 0.0001
 models_dict = {
     #"SE_UNet_3": DAE_models.SE_UNet_3,
     #"SE_UNet_4": DAE_models.SE_UNet_4,
-    "SE_UNet_5": DAE_models.SE_UNet_5,
+    #"SE_UNet_5": DAE_models.SE_UNet_5,
+    "SE_UNet_6": DAE_models.SE_UNet_6,
+    "SE_UNet_7": DAE_models.SE_UNet_7,
 }
 reduction = {"8": 8, "4": 4}
 
