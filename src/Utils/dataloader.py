@@ -219,8 +219,6 @@ def load_all_patients(data_base_dir, window_size):
     all_targets = np.concatenate(all_targets, axis=0)
     
     return all_inputs, all_targets, patient_ids
-
-
 #NESTED_CV just for inner folds
 def get_nested_cv_loaders (all_inputs, all_targets, batch_size=32, inner_folds=5):
 
@@ -244,3 +242,57 @@ def get_nested_cv_loaders (all_inputs, all_targets, batch_size=32, inner_folds=5
         val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
         
         yield train_loader, val_loader
+        
+#L1OUT      
+def load_all_patients_grouped(data_base_dir, window_size):
+    patient_folders = sorted(glob.glob(os.path.join(data_base_dir, "Filtered_Data_pat*")))
+    if not patient_folders:
+        raise FileNotFoundError("No patient folders found in Data directory.")
+    
+    patient_data = {}  # Dict to hold per-patient data
+    
+    for patient_folder in patient_folders:
+        patient_id = os.path.basename(patient_folder).split("Filtered_Data_")[-1]
+        
+        input_files = sorted(glob.glob(os.path.join(patient_folder, "original_filtered_segment_*.npy")))
+        target_files = sorted(glob.glob(os.path.join(data_base_dir, "Data_" + patient_id, "preprocessed_segment_*.npy")))
+        
+        if not input_files or not target_files:
+            continue
+        
+        inputs = [np.load(f) for f in input_files]
+        targets = [np.load(f) for f in target_files]
+
+        X_patient, y_patient = utils.split_segments(np.array(inputs), np.array(targets), window_size)
+        X_patient, y_patient = utils.select_channels_per_patient(X_patient, y_patient, patient_id)
+        
+        patient_data[patient_id] = (X_patient, y_patient)
+    
+    return patient_data
+
+def get_leave_one_patient_out_loaders(patient_data, batch_size=32):
+    patient_ids = list(patient_data.keys())
+
+    for test_patient_id in patient_ids:
+        print(f"\n[LOPO] Test Patient: {test_patient_id}")
+        
+        X_test, y_test = patient_data[test_patient_id]
+
+        X_train_list, y_train_list = [], []
+        for pid, (X, y) in patient_data.items():
+            if pid == test_patient_id:
+                continue
+            X_train_list.append(X)
+            y_train_list.append(y)
+        
+        X_train = np.concatenate(X_train_list, axis=0)
+        y_train = np.concatenate(y_train_list, axis=0)
+
+        # Create datasets and loaders
+        train_dataset = EEGDataset(X_train, y_train)
+        test_dataset = EEGDataset(X_test, y_test)
+        
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)
+        
+        yield test_patient_id, train_loader, test_loader
