@@ -51,7 +51,7 @@ models_dict = {
     "SE_UNet_6": DAE_models.SE_UNet_6,
     "SE_UNet_7": DAE_models.SE_UNet_7,
 }
-reduction = {"8": 8, "4": 4}
+reduction = {"16":16 }
 
 for model_name, model_class in models_dict.items():
     for loss_key, loss_value in loss_function.items():
