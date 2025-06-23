@@ -48,7 +48,7 @@ models_dict = {
     #"SE_UNet_3": DAE_models.SE_UNet_3,
     #"SE_UNet_4": DAE_models.SE_UNet_4,
     #"SE_UNet_5": DAE_models.SE_UNet_5,
-    "SE_UNet_6": DAE_models.SE_UNet_6,
+    #"SE_UNet_6": DAE_models.SE_UNet_6,
     "SE_UNet_7": DAE_models.SE_UNet_7,
 }
 reduction = {"16":16 }

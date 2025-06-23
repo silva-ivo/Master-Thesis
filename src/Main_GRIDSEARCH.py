@@ -44,6 +44,7 @@ loss_function = {
 }
 lr = {"0.001": 0.001}#"0.01": 0.01,"0.0001": 0.0001
 
+#REDUCTION FACTOR FOR THE SE LAYER
 reduction={"4":4} #"16":16,"8":8
 
 model_id=0

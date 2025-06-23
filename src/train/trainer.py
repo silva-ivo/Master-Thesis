@@ -5,12 +5,12 @@ import time
 
 
 
-def train_model(model, model_name, train_loader, val_loader, window_size_name,
-                loss_function, loss_function_name, device, num_epochs,
+def train_model(model, model_name, train_loader, val_loader,
+                loss_function,device, num_epochs,
                 early_stopping_patience, lr):
     
-    print(f"Estou no treino")
-    model_save_path = f"/data/home/silva/Documents/Pipline_2/Data/Results/DCNn_GridSearch/Phase_/{model_name}"
+    print(f"IM AT TRAIN")
+    model_save_path = f"/data/home/silva/Documents/Pipline_2/Results/Final_Validation/{model_name}"
     os.makedirs(model_save_path, exist_ok=True)  
     save_path_bestmodel = os.path.join(model_save_path, "best_model.pth")
         

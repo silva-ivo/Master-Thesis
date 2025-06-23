@@ -187,9 +187,9 @@ class RRMSELoss(nn.Module):
     
     
 def plot_predictions(y_true_cpu, y_pred_cpu, x_inputs_cpu, 
-                     num_windows, save_folder,win_size,reduction,model_id,loss_name):
+                     num_windows, save_folder):
 
-    save_dir = os.path.join(save_folder,f"model{model_id}","PLOTS", "Predictions",f"Loss-{loss_name}" f"window-{win_size}", f"reduction-{reduction}")
+    save_dir = os.path.join(save_folder,"PLOTS", "Predictions")
     os.makedirs(save_dir, exist_ok=True)
 
     for i in range(num_windows):
@@ -201,15 +201,16 @@ def plot_predictions(y_true_cpu, y_pred_cpu, x_inputs_cpu,
         x_input_np = x_inputs_cpu[random_index, :, channel_idx].cpu().numpy()
 
         jitter = np.linspace(-0.2, 0.2, len(y_true_np))
+        time_axis = np.arange(len(y_true_np)) / 256
 
         # ---- First Figure: Combined Plot ----
         plt.figure(figsize=(12, 6))
-        plt.plot(x_input_np + jitter, label='Input Values', linestyle='-', linewidth=1.2, alpha=1, color='#D55E00')  # Dark orange
-        plt.plot(y_true_np + jitter, label='True Values', linestyle='-', linewidth=1, alpha=0.8, color='#56B4E9')  # Light blue
-        plt.plot(y_pred_np + jitter, label='Predicted Values', linestyle='-', linewidth=0.8, alpha=0.6, color='black')  # Black
+        plt.plot(time_axis,x_input_np + jitter, label='Input Values', linestyle='-', linewidth=1.2, alpha=1, color='#D55E00')  # Dark orange
+        plt.plot(time_axis,y_true_np + jitter, label='True Values', linestyle='-', linewidth=1, alpha=0.8, color='#56B4E9')  # Light blue
+        plt.plot(time_axis,y_pred_np + jitter, label='Predicted Values', linestyle='-', linewidth=0.8, alpha=0.6, color='black')  # Black
         plt.title(f'Predictions vs True Values (Window {random_index}, Channel {channel_idx})')
-        plt.xlabel('Time Points')
-        plt.ylabel('Values')
+        plt.xlabel('Time (seconds)')
+        plt.ylabel('Amplitude (µV)')
         plt.legend()
         plt.grid(True)
 
@@ -254,8 +255,8 @@ def plot_predictions(y_true_cpu, y_pred_cpu, x_inputs_cpu,
         # plt.close()
      
 
-def plot_loss(history,save_folder,window_size,reduction,model_id,loss_name):
-    save_dir=os.path.join(save_folder,f"model{model_id}","PLOTS","LOSS",f"Loss fucntion-{loss_name}" f"window-{window_size}", f"reduction-{reduction}")
+def plot_loss(history,save_folder):
+    save_dir=os.path.join(save_folder,"PLOTS","LOSS")
     os.makedirs(save_dir, exist_ok=True)
 
 
