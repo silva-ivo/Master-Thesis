@@ -5,15 +5,18 @@ import time
 
 
 
-def train_model(model, model_name, train_loader, val_loader,
+def train_model(model, model_id, train_loader, val_loader,
                 loss_function,device, num_epochs,
                 early_stopping_patience, lr):
     
     print(f"IM AT TRAIN")
-    model_save_path = f"/data/home/silva/Documents/Pipline_2/Results/Final_Validation/{model_name}"
-    os.makedirs(model_save_path, exist_ok=True)  
-    save_path_bestmodel = os.path.join(model_save_path, "best_model.pth")
-        
+    model_save_path = "/data/home/silva/Documents/Pipline_2/Results/SE_ResNet1D/Phase_5_Final_Validation/"       
+    os.makedirs(model_save_path, exist_ok=True)
+    
+    model_folder = os.path.join(model_save_path, f"{model_id}")
+    os.makedirs(model_folder, exist_ok=True)
+    save_path_bestmodel = os.path.join(model_folder, "best_model.pth")
+    
     criterion = loss_function
     optimizer = optim.Adam(model.parameters(), lr)
 
@@ -90,6 +93,7 @@ def train_model(model, model_name, train_loader, val_loader,
 
         # Save best model and inference time
         if epoch_val_loss < best_val_loss:
+            print(f"[INFO] Saving model with val_loss = {epoch_val_loss:.4f}")
             best_val_loss = epoch_val_loss
             torch.save(model.state_dict(), save_path_bestmodel)
             history['val_inference_time_ms'] = avg_inference_time

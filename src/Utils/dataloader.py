@@ -220,14 +220,19 @@ def load_all_patients(data_base_dir, window_size):
     
     return all_inputs, all_targets, patient_ids
 #NESTED_CV just for inner folds
-def get_nested_cv_loaders (all_inputs, all_targets, batch_size=32, inner_folds=5):
+def get_nested_cv_loaders (all_inputs, all_targets, batch_size=32, inner_folds=10):
 
     # Use all data for splitting
-    data_indices = np.arange(len(all_inputs) //2)# Create indices for all data
+    data_indices = np.arange(len(all_inputs))# Create indices for all data
 
     # Initialize KFold for splitting all data
     inner_cv = KFold(n_splits=inner_folds, shuffle=True, random_state=42)
-    
+    #data_indices = np.arange(len(all_inputs))
+    # for i, (train_idx, val_idx) in enumerate(inner_cv.split(data_indices)):
+    #     print(f"Fold {i+1}")
+    #     print(f"Train indices: {train_idx}")
+    #     print(f"Val indices: {val_idx}")
+        
     for inner_train_idx, inner_val_idx in inner_cv.split(data_indices):
         # Split data based on indices
         X_train, y_train = all_inputs[inner_train_idx], all_targets[inner_train_idx]
@@ -273,24 +278,28 @@ def load_all_patients_grouped(data_base_dir, window_size):
 def get_leave_one_patient_out_loaders(patient_data, batch_size=32):
     patient_ids = list(patient_data.keys())
 
+    print(f"Patient IDs: {patient_ids}")
+
     for test_patient_id in patient_ids:
         print(f"\n[LOPO] Test Patient: {test_patient_id}")
         
         X_test, y_test = patient_data[test_patient_id]
+        test_patient_ids = [test_patient_id] * len(X_test)  # repeat ID for each test sample
 
-        X_train_list, y_train_list = [], []
+        X_train_list, y_train_list, train_patient_ids = [], [], []
         for pid, (X, y) in patient_data.items():
             if pid == test_patient_id:
                 continue
             X_train_list.append(X)
             y_train_list.append(y)
+            train_patient_ids.extend([pid] * len(X))  # repeat ID for each training sample
         
         X_train = np.concatenate(X_train_list, axis=0)
         y_train = np.concatenate(y_train_list, axis=0)
 
-        # Create datasets and loaders
-        train_dataset = EEGDataset(X_train, y_train)
-        test_dataset = EEGDataset(X_test, y_test)
+        # Create datasets with patient IDs
+        train_dataset = EEGDataset(X_train, y_train, train_patient_ids)
+        test_dataset = EEGDataset(X_test, y_test, test_patient_ids)
         
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True)

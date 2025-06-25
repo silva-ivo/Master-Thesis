@@ -388,7 +388,7 @@ class SE_UNet_4(nn.Module):
         return output   
 
 class SE_UNet_5(nn.Module):
-    def __init__(self, num_classes=2, input_channels=2,reduction=16,dropout=0, **kwargs):
+    def __init__(self, num_classes=2, input_channels=2,reduction=16,dropout=0.1, **kwargs):
         super().__init__()
 
         nb_filter = [16, 32, 64, 128, 256 ]

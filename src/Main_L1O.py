@@ -20,16 +20,16 @@ all_pcc,all_snr_diff,all_rmse,all_rrmse,all_cpt = [],[],[],[],[]
 patient_data=dataloader.load_all_patients_grouped(data_base_dir, window_size=1280)
 fold=1
 for test_patient_id,train_loader,val_loader in dataloader.get_leave_one_patient_out_loaders(patient_data):
-    
+   
     print(f"Processing patient {test_patient_id}, fold-{fold}")
     model_id = f"{test_patient_id}_model"
     model_config_file = f"/data/home/silva/Documents/Pipline_2/Results/Final_Validation/{model_id}"
     os.makedirs(os.path.dirname(model_config_file), exist_ok=True)
     
     # === Model parameter space ===
-    num_blocks = 4
-    channels = [32, 64, 128, 256]
-    kernel_sizes = [9, 7, 5, 3]
+    num_blocks = 5
+    channels = [32, 64, 128, 256, 512]
+    kernel_sizes = [9, 7, 5, 3, 3]
     use_residual = True
     dropout_rate = 0.1
     
@@ -42,12 +42,14 @@ for test_patient_id,train_loader,val_loader in dataloader.get_leave_one_patient_
     
     # Initialize model
     model = cnn_models.SE_ResNet1D(
+        input_channels=2,
         num_blocks=num_blocks,
         channels=channels,
         kernel_sizes=kernel_sizes,
+        reduction=reduction,
         use_residual=use_residual,
         dropout_rate=dropout_rate,
-        reduction=reduction
+        
     )
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
